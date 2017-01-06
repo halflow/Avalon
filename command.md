@@ -1,9 +1,36 @@
+linux命令
+
 raspi-config                                                   进入树莓派设置
 bash ./XX.sh                                                   启动这个目录下的shell脚本
 cat  /sys/class/thermal/thermal_zone0/temp   查看CPU温度（除以1000）
 vcgencmd measure_temp                                查看CPU温度
 rm -rf 文件名                                                 递归删除文件夹
 
+
+
+============================================================================================
+vi/vim命令
+i    插入
+dd   删除这一行
+ndd  删除向下的n行，n为数字，如20dd
+x    删除光标所在字符
+yy   复制当前的一行
+nyy  复制向下的n行，如20yy
+0或[Home]  移动到这一行第一个字符
+$或[End]   移动到这一行最后一个字符
+G     移动到文件最后一行
+gg    移动到文件第一行
+n<Enter>   向下移动n行
+esc  退出插入模式
+:q    退出
+:q！  强制退出
+:w    保存
+:wq   保存并退出
+:/关键字符串          vi中用于查找，之后用n移到下一个 
+:set ff?           查看当前文本的模式类型，一般为dos,unix
+:set ff=dos        设置为dos模式，也可以转换为unix模式
+
+==============================================================================================
 git add .                          有新文件加入时使用这一句
 
 git fetch origin master    获取最新版本到本地;git merge origin master  将本地和远程合并
@@ -13,7 +40,7 @@ git commit -a -m "Ubuntu0或者raspi或者Win再加上日期"      “”内的�
 git push origin master                                                                将本地版本推送到github
 
 git log
-git log --pretty=oneline                  查看历史版本
+git log --pretty=oneline                  查看历史版本，查询之后按q退出
 
 git reflog                                         记录你的每一次命令
 

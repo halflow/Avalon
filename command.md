@@ -1,4 +1,3 @@
-﻿
 raspi-config                                                   进入树莓派设置
 bash ./XX.sh                                                   启动这个目录下的shell脚本
 cat  /sys/class/thermal/thermal_zone0/temp   查看CPU温度（除以1000）

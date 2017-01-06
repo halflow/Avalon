@@ -1,24 +1,29 @@
-raspi-config                                                   ½øÈëÊ÷İ®ÅÉÉèÖÃ
-bash ./XX.sh                                                   Æô¶¯Õâ¸öÄ¿Â¼ÏÂµÄshell½Å±¾
-cat  /sys/class/thermal/thermal_zone0/temp   ²é¿´CPUÎÂ¶È£¨³ıÒÔ1000£©
-vcgencmd measure_temp                                ²é¿´CPUÎÂ¶È
-rm -rf ÎÄ¼şÃû                                                 µİ¹éÉ¾³ıÎÄ¼ş¼Ğ
 
-git add .                          ÓĞĞÂÎÄ¼ş¼ÓÈëÊ±Ê¹ÓÃÕâÒ»¾ä
+raspi-config                                                   è¿›å…¥æ ‘è“æ´¾è®¾ç½®
+bash ./XX.sh                                                   å¯åŠ¨è¿™ä¸ªç›®å½•ä¸‹çš„shellè„šæœ¬
+cat  /sys/class/thermal/thermal_zone0/temp   æŸ¥çœ‹CPUæ¸©åº¦ï¼ˆé™¤ä»¥1000ï¼‰
+vcgencmd measure_temp                                æŸ¥çœ‹CPUæ¸©åº¦
+rm -rf æ–‡ä»¶å                                                 é€’å½’åˆ é™¤æ–‡ä»¶å¤¹
 
-git fetch origin master    »ñÈ¡×îĞÂ°æ±¾µ½±¾µØ;git merge origin master  ½«±¾µØºÍÔ¶³ÌºÏ²¢
-git pull origin master     ºÏ²¢ÒÔÉÏÁ½¸öÃüÁî£¬Ö»ĞèÒªÕâÒ»Ìõ
+git add .                          æœ‰æ–°æ–‡ä»¶åŠ å…¥æ—¶ä½¿ç”¨è¿™ä¸€å¥
 
-git commit -a -m "Ubuntu0»òÕßraspi»òÕßWinÔÙ¼ÓÉÏÈÕÆÚ"      ¡°¡±ÄÚµÄÄÚÈİÊÇ±íÊ¾ÕâÊÇË­ĞŞ¸ÄµÄ£¬±ØĞëÏÈÖ´ĞĞÕâÒ»¾ä£¬ÔÙpushÉÏ·şÎñÆ÷
-git push origin master                                                                ½«±¾µØ°æ±¾ÍÆËÍµ½github
+git fetch origin master    è·å–æœ€æ–°ç‰ˆæœ¬åˆ°æœ¬åœ°;git merge origin master  å°†æœ¬åœ°å’Œè¿œç¨‹åˆå¹¶
+git pull origin master     åˆå¹¶ä»¥ä¸Šä¸¤ä¸ªå‘½ä»¤ï¼Œåªéœ€è¦è¿™ä¸€æ¡
+
+git commit -a -m "Ubuntu0æˆ–è€…raspiæˆ–è€…Winå†åŠ ä¸Šæ—¥æœŸ"      â€œâ€å†…çš„å†…å®¹æ˜¯è¡¨ç¤ºè¿™æ˜¯è°ä¿®æ”¹çš„ï¼Œå¿…é¡»å…ˆæ‰§è¡Œè¿™ä¸€å¥ï¼Œå†pushä¸ŠæœåŠ¡å™¨
+git push origin master                                                                å°†æœ¬åœ°ç‰ˆæœ¬æ¨é€åˆ°github
 
 git log
-git log --pretty=oneline                  ²é¿´ÀúÊ·°æ±¾
+git log --pretty=oneline                  æŸ¥çœ‹å†å²ç‰ˆæœ¬
 
-git reflog                                         ¼ÇÂ¼ÄãµÄÃ¿Ò»´ÎÃüÁî
+git reflog                                         è®°å½•ä½ çš„æ¯ä¸€æ¬¡å‘½ä»¤
 
-git reset --hard HEAD^                     ÉÏÒ»¸ö°æ±¾¾ÍÊÇ  HEAD^£¬ÉÏÉÏÒ»¸ö°æ±¾¾ÍÊÇ  HEAD^^£¬ÍùÉÏ100¸ö°æ±¾Ğ´³É  HEAD~100¡£
-git reset --hard 3628164                    »ØÍËÖ¸¶¨°æ±¾£¬¡°3628164¡±ÊÇ°æ±¾µÄcommit idµÄÇ°¼¸Î»
-git push -f origin master                        ½«±¾µØ°æ±¾ÍÆËÍµ½github£¬ÓÉÓÚÊÇ¾É°æ±¾£¬github½ûÖ¹push£¬ĞèÒªÇ¿ÖÆ-f
+git reset --hard HEAD^                     ä¸Šä¸€ä¸ªç‰ˆæœ¬å°±æ˜¯  HEAD^ï¼Œä¸Šä¸Šä¸€ä¸ªç‰ˆæœ¬å°±æ˜¯  HEAD^^ï¼Œå¾€ä¸Š100ä¸ªç‰ˆæœ¬å†™æˆ  HEAD~100ã€‚
+git reset --hard 3628164                    å›é€€æŒ‡å®šç‰ˆæœ¬ï¼Œâ€œ3628164â€æ˜¯ç‰ˆæœ¬çš„commit idçš„å‰å‡ ä½
+git push -f origin master                        å°†æœ¬åœ°ç‰ˆæœ¬æ¨é€åˆ°githubï¼Œç”±äºæ˜¯æ—§ç‰ˆæœ¬ï¼Œgithubç¦æ­¢pushï¼Œéœ€è¦å¼ºåˆ¶-f
 
+<<<<<<< HEAD
 ¼ÙÔO A ÊÇ®”Ç°°æ±¾£¬B ÊÇÉÏ‚€°æ±¾£¬ÍË»Ø B ÔÙÌá½»Ò»‚€ C °æ±¾£¬ÄÇüN C ²»•ş“íÓĞ A ÒÔ¼° A »ùµAÉÏÌá½»µÄ°æ±¾ĞŞ¸ÄµÄƒÈÈİ¡£C(HEAD^)ÊÇB£¬ A(HEAD^)Ò²ÊÇB,  îËÆ¶àÁËÒ»‚€·ÖÖ§Ò»˜Ó¡£
+=======
+å‡è¨­ A æ˜¯ç•¶å‰ç‰ˆæœ¬ï¼ŒB æ˜¯ä¸Šå€‹ç‰ˆæœ¬ï¼Œé€€å› B å†æäº¤ä¸€å€‹ C ç‰ˆæœ¬ï¼Œé‚£éº¼ C ä¸æœƒæ“æœ‰ A ä»¥åŠ A åŸºç¤ä¸Šæäº¤çš„ç‰ˆæœ¬ä¿®æ”¹çš„å…§å®¹ã€‚C(HEAD^)æ˜¯Bï¼Œ A(HEAD^)ä¹Ÿæ˜¯B,  é¡ä¼¼å¤šäº†ä¸€å€‹åˆ†æ”¯ä¸€æ¨£ã€‚
+>>>>>>> c2b1ff5e0824dca1c47280521f91b4cdec7808f9

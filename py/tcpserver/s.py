@@ -11,7 +11,7 @@ addr = (host,port)
 class Servers(SRH):  
     def handle(self):  
         print('got connection from ',self.client_address)
-        self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
+        #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(1024)  
             if not data:   

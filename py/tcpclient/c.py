@@ -9,7 +9,7 @@ addr = (host,port)
 client = socket(AF_INET,SOCK_STREAM)  
 client.connect(addr)  
 while True:  
-    data = raw_input()  
+    data = input()  
     if not data or data=='exit':  
         break  
     client.send('%s\r\n' % data)  

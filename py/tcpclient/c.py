@@ -16,5 +16,5 @@ while True:
     data = client.recv(bufsize)  
     if not data:  
         break  
-    print data.strip()  
+    print(data.strip()) 
 client.close()

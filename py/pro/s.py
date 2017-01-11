@@ -16,10 +16,14 @@ addr = (host,port)
 def bufwrite(message):
     q.put(message)
 
+#列表保存所有的socket
+connection_list=[]
+
 #Servers类	
 class Servers(SRH):  
     def handle(self):  
         print('got connection from ',self.client_address)
+        connection_list.append(self.client_address)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(1024)  
@@ -32,6 +36,8 @@ class Servers(SRH):
                 if self.client_address[0]==l[0]:
                     self.request.send(l[1])  
                     print(l)
+                    for j in range(len(connection_list)):
+                        print(connection_list[j])
 print('server is running....')  
 server = socketserver.ThreadingTCPServer(addr,Servers)  
 server.serve_forever()

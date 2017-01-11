@@ -25,8 +25,9 @@ class Servers(SRH):
                 break  
             bufwrite(self.client_address[0],data)  
             print("RECV from ", self.client_address[0]) 
-            if not q.empty():        			
-                self.request.send(q.get()[1])  
+            if not q.empty(): 
+                l=q.get()			
+                self.request.send(l[1])  
 print('server is running....')  
 server = socketserver.ThreadingTCPServer(addr,Servers)  
 server.serve_forever()

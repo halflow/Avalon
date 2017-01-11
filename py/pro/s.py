@@ -5,7 +5,7 @@ import queue
 from socketserver import StreamRequestHandler as SRH  
 from time import ctime  
 
-q=queue.queue(20)
+q=queue.Queue(20)
   
 host = '192.168.1.108'  
 port = 9999  

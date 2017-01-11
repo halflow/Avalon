@@ -12,8 +12,8 @@ port = 9998
 addr = (host,port)  
 
 #写入buffer
-def bufwrite(message):
-    q.put(message)
+def bufwrite(addr,message):
+    q.put(addr,message)
   
 class Servers(SRH):  
     def handle(self):  
@@ -23,7 +23,7 @@ class Servers(SRH):
             data = self.request.recv(1024)  
             if not data:   
                 break  
-            bufwrite(data)  
+            bufwrite(client_address,data)  
             print("RECV from ", self.client_address[0]) 
             if not q.empty():        			
                 self.request.send(q.get())  

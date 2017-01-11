@@ -8,7 +8,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9999  
+port = 9998  
 addr = (host,port)  
 
 #写入buffer

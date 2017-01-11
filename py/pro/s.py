@@ -5,16 +5,18 @@ import queue
 from socketserver import StreamRequestHandler as SRH  
 from time import ctime  
 
+#建立一个FIFO队列，括号内是max长度
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
 port = 9995  
 addr = (host,port)  
 
-#写入buff
+#写入FIFO队列
 def bufwrite(message):
     q.put(message)
-  
+
+#Servers类	
 class Servers(SRH):  
     def handle(self):  
         print('got connection from ',self.client_address)

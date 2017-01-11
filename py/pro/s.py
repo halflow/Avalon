@@ -11,8 +11,8 @@ host = '192.168.1.108'
 port = 9999  
 addr = (host,port)  
 
-#写入
-def bufwrite(message)
+#写入buffer
+def bufwrite(message):
     q.put(message)
   
 class Servers(SRH):  

@@ -5,7 +5,7 @@ import queque
 from socketserver import StreamRequestHandler as SRH  
 from time import ctime  
 
-q=queuqe.queue(20)
+q=Queuqe.queue(20)
   
 host = '192.168.1.108'  
 port = 9999  

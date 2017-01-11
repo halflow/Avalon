@@ -23,15 +23,15 @@ class Servers(SRH):
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(1024)  
-            if not data:   
-                break  
-            l1=(self.client_address[0],data)
-            bufwrite(l1)
-            print("RECV from ", self.client_address) 
+            if data:     
+                l1=(self.client_address[0],data)
+                bufwrite(l1)
+                print("RECV from ", self.client_address) 
             if not q.empty(): 
                 l=q.get()			
-                self.request.send(l[1])  
-                print(l)
+                if self.client_address==l[0]
+				    self.request.send(l[1])  
+                    print(l)
 print('server is running....')  
 server = socketserver.ThreadingTCPServer(addr,Servers)  
 server.serve_forever()

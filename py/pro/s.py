@@ -8,7 +8,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9997  
+port = 9996  
 addr = (host,port)  
 
 #写入buffer
@@ -23,7 +23,7 @@ class Servers(SRH):
             data = self.request.recv(1024)  
             if not data:   
                 break  
-            bufwrite(client_address[0],data)  
+            bufwrite(self.client_address,data)  
             print("RECV from ", self.client_address[0]) 
             if not q.empty():        			
                 self.request.send(q.get())  

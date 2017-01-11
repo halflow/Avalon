@@ -11,7 +11,7 @@ host = '192.168.1.108'
 port = 9995  
 addr = (host,port)  
 
-#写入buffer
+#写入buff
 def bufwrite(message):
     q.put(message)
   
@@ -23,13 +23,13 @@ class Servers(SRH):
             data = self.request.recv(1024)  
             if not data:   
                 break  
-            #l1=(self.client_address[0],data)
-			bufwrite(data)
+            l1=(self.client_address[0],data)
+            bufwrite(l1)
             print("RECV from ", self.client_address) 
             if not q.empty(): 
-                #l=q.get()			
-                #self.request.send(q.get())  
-				print(q.get())
+                l=q.get()			
+                self.request.send(l[1])  
+                print(l)
 print('server is running....')  
 server = socketserver.ThreadingTCPServer(addr,Servers)  
 server.serve_forever()

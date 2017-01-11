@@ -9,7 +9,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9995  
+port = 9994  
 addr = (host,port)  
 
 #写入FIFO队列

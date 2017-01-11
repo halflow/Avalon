@@ -12,8 +12,8 @@ port = 9998
 addr = (host,port)  
 
 #写入buffer
-def bufwrite(addr,message):
-    q.put(addr,message)
+def bufwrite(addr_r,message):
+    q.put(addr_r,message)
   
 class Servers(SRH):  
     def handle(self):  

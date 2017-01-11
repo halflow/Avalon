@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 #创建SocketServerTCP服务器：  
 import socketserver
-import queque
+import queue
 from socketserver import StreamRequestHandler as SRH  
 from time import ctime  
 
-q=Queue.queue(20)
+q=queue.queue(20)
   
 host = '192.168.1.108'  
 port = 9999  

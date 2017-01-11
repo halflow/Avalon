@@ -24,7 +24,7 @@ class Servers(SRH):
             if not data:   
                 break  
             #l1=(self.client_address[0],data)
-			bufwrite(data)  
+			bufwrite(data)
             print("RECV from ", self.client_address) 
             if not q.empty(): 
                 #l=q.get()			

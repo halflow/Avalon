@@ -9,7 +9,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9994  
+port = 9993 
 addr = (host,port)  
 
 #写入FIFO队列
@@ -29,8 +29,8 @@ class Servers(SRH):
                 print("RECV from ", self.client_address) 
             if not q.empty(): 
                 l=q.get()			
-                if self.client_address==l[0]:
-				    self.request.send(l[1])  
+                if self.client_address[0]==l[0]:
+                    self.request.send(l[1])  
                     print(l)
 print('server is running....')  
 server = socketserver.ThreadingTCPServer(addr,Servers)  

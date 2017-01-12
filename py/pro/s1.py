@@ -48,9 +48,9 @@ TCS = socketserver.ThreadingTCPServer(addr,Servers)
 
 class TCS_A(TCS):  
     def service_actions(self):
-    while 1:
-        if not q.empty(): 
-            l=q.get()
-            broadcast(l[0],l[1])
+        while 1:
+            if not q.empty(): 
+                l=q.get()
+                broadcast(l[0],l[1])
 TCS_B=TCS_A
 TCS_B.serve_forever()

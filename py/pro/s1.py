@@ -25,7 +25,7 @@ def broadcast(sock,data_sent):
         #反馈信息不发给master socket和发消息来的client socket
         if socketid!=server_socket and socketid!=sock:
             try:
-            sk.sendto(data_sent,socketid)
+                sk.sendto(data_sent,socketid)
             except:
                 #如果发送错误，则删除这个client socket
                 socket.close()

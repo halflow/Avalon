@@ -9,7 +9,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9997 
+port = 9996 
 addr = (host,port)  
 #列表保存所有的socket
 connection_list=[]
@@ -42,7 +42,7 @@ class Servers(SRH):
             if data:
                 l1=(self.client_address,data)
                 bufwrite(l1)
-                sk.send(data)
+                sk.sendto(data,self.client_address)
     def service_actions(self):
             if not q.empty(): 
                 l=q.get()

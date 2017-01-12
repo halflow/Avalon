@@ -18,13 +18,14 @@ connection_list=[]
 def bufwrite(message):
     q.put(message)
 
+sk=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 #所有的反馈信息都广播到所有的socket
 def broadcast(sock,data_sent):
-    for socket in connection_list:
+    for socketid in connection_list:
         #反馈信息不发给master socket和发消息来的client socket
-        if socket!=server_socket and socket!=sock:
+        if socketid!=server_socket and socketid!=sock:
             try:
-            socket.send(data_sent)
+            sk.sendto(data_sent,socketid)
             except:
                 #如果发送错误，则删除这个client socket
                 socket.close()

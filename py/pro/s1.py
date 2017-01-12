@@ -2,7 +2,7 @@
 #server接收client发来的消息，进入fifo之后取出，并广播给所有的cilent（不包括发来的）
 #创建SocketServerTCP服务器：  
 import socketserver,socket,queue
-from socketserver import StreamRequestHandler as SRH  
+from socketserver import StreamRequestHandler as SRH,BaseServer as BS
 from time import ctime  
 
 #建立一个FIFO队列，括号内是max长度
@@ -25,7 +25,7 @@ def broadcast(sock,data_sent):
         #反馈信息不发给master socket和发消息来的client socket
         if socketid!=server_socket and socketid!=sock:
             try:
-                sk.sendto(data_sent,socketid)
+                socket.sendto(data_sent,socketid)
             except:
                 #如果发送错误，则删除这个client socket
                 socket.close()
@@ -42,15 +42,19 @@ class Servers(SRH):
             if data:
                 l1=(self.client_address,data)
                 bufwrite(l1)
-
-print('server is running....')  
-TCS = socketserver.ThreadingTCPServer(addr,Servers)  
-
-class TCS_A(TCS):  
     def service_actions(self):
         while 1:
             if not q.empty(): 
                 l=q.get()
                 broadcast(l[0],l[1])
-TCS_B=TCS_A
-TCS_B.serve_forever()
+print('server is running....')  
+TCS = socketserver.ThreadingTCPServer(addr,Servers)  
+
+# class baseser(BS):  
+    # def service_actions(self):
+        # while 1:
+            # if not q.empty(): 
+                # l=q.get()
+                # broadcast(l[0],l[1])
+# TCS_B=TCS_A
+TCS.serve_forever()

@@ -2,14 +2,14 @@
 #server接收client发来的消息，进入fifo之后取出，并广播给所有的cilent（不包括发来的）
 #创建SocketServerTCP服务器：  
 import socketserver,socket,queue
-from socketserver import StreamRequestHandler as SRH,BaseServer as BS
+from socketserver import StreamRequestHandler as SRH,BaseServer as BS,TCPserver as TCPS,ThreadingMixIn as TMI
 from time import ctime  
 
 #建立一个FIFO队列，括号内是max长度
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9996 
+port = 9995 
 addr = (host,port)  
 #列表保存所有的socket
 connection_list=[]
@@ -32,7 +32,7 @@ def broadcast(sock,data_sent):
                 connection_list.remove(socketid)
 
 #Servers类	
-class Servers(SRH):  
+class Myhandler(SRH):  
     def handle(self):  
         print('got connection from ',self.client_address)
         connection_list.append(self.client_address)
@@ -42,19 +42,15 @@ class Servers(SRH):
             if data:
                 l1=(self.client_address,data)
                 bufwrite(l1)
-                sk.sendto(data,self.client_address)
-    def service_actions(self):
-            if not q.empty(): 
-                l=q.get()
-                broadcast(l[0],l[1])
-print('server is running....')  
-TCS = socketserver.ThreadingTCPServer(addr,Servers)  
+                #sk.sendto(data,self.client_address)
 
-class baseser(BS):  
+class ThreadingTCPServer(TMI,TCPS)
     def service_actions(self):
-        while 1:
             if not q.empty(): 
                 l=q.get()
-                broadcast(l[0],l[1])
-# TCS_B=TCS_A
-TCS.serve_forever()
+                print(l)
+                #broadcast(l[0],l[1])
+
+print('server is running....')  
+s=ThreadingTCPServer(addr,Myhandler)  
+s.serve_forever()

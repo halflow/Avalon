@@ -9,7 +9,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9999 
+port = 9998 
 addr = (host,port)  
 #列表保存所有的socket
 connection_list=[]
@@ -55,5 +55,5 @@ class baseser(BS):
             if not q.empty(): 
                 l=q.get()
                 broadcast(l[0],l[1])
-TCS_B=TCS_A
+# TCS_B=TCS_A
 TCS.serve_forever()

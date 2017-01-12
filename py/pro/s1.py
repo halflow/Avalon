@@ -2,7 +2,7 @@
 #server接收client发来的消息，进入fifo之后取出，并广播给所有的cilent（不包括发来的）
 #创建SocketServerTCP服务器：  
 import socketserver,socket,queue
-from socketserver import StreamRequestHandler as SRH,BaseServer as BS,TCPserver as TCPS,ThreadingMixIn as TMI
+from socketserver import StreamRequestHandler as SRH,BaseServer as BS,TCPServer as TCPS,ThreadingMixIn as TMI
 from time import ctime  
 
 #建立一个FIFO队列，括号内是max长度

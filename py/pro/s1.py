@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#server将所有的client socket都保存在列表中，收到的消息存入FIFO，取出后再发回，并打印出所有的client socket
+#server接收client发来的消息，进入fifo之后取出，并广播给所有的cilent（不包括发来的）
 #创建SocketServerTCP服务器：  
 import socketserver
 import queue
@@ -19,6 +19,18 @@ connection_list=[]
 def bufwrite(message):
     q.put(message)
 
+#所有的反馈信息都广播到所有的socket
+def broadcast(sock,data_sent):
+    for socket in connection_list:
+        #反馈信息不发给master socket和发消息来的client socket
+        if socket!=server_socket and socket!=sock:
+            try:
+            socket.send(data_sent)
+            except:
+                #如果发送错误，则删除这个client socket
+                socket.close()
+                connection_list.remove(socketid)
+
 #Servers类	
 class Servers(SRH):  
     def handle(self):  
@@ -27,18 +39,17 @@ class Servers(SRH):
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(1024)  
-            if data:     
-                ##self.client_address是二维的元组，[0]是IP，[1]是port
-                l1=(self.client_address[0],data)
+            if data:
+                l1=(self.client_address,data)
                 bufwrite(l1)
-                print("RECV from ", self.client_address) 
-            if not q.empty(): 
-                l=q.get()            
-                if self.client_address[0]==l[0]:
-                    self.request.send(l[1])  
-                    print(l)
-                    for j in range(len(connection_list)):
-                        print(connection_list[j])
+
 print('server is running....')  
 server = socketserver.ThreadingTCPServer(addr,Servers)  
 server.serve_forever()
+
+if __name__ == "__main__":
+    print('进入main了...')
+    while 1:
+        if not q.empty(): 
+            l=q.get()
+            broadcast(l[0],l[1])

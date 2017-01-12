@@ -43,18 +43,17 @@ class Servers(SRH):
                 l1=(self.client_address,data)
                 bufwrite(l1)
     def service_actions(self):
-        while 1:
             if not q.empty(): 
                 l=q.get()
                 broadcast(l[0],l[1])
 print('server is running....')  
 TCS = socketserver.ThreadingTCPServer(addr,Servers)  
 
-# class baseser(BS):  
-    # def service_actions(self):
-        # while 1:
-            # if not q.empty(): 
-                # l=q.get()
-                # broadcast(l[0],l[1])
-# TCS_B=TCS_A
+class baseser(BS):  
+    def service_actions(self):
+        while 1:
+            if not q.empty(): 
+                l=q.get()
+                broadcast(l[0],l[1])
+TCS_B=TCS_A
 TCS.serve_forever()

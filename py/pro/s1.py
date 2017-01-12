@@ -42,6 +42,7 @@ class Servers(SRH):
             if data:
                 l1=(self.client_address,data)
                 bufwrite(l1)
+                socket.sendto(data,self.client_address)
     def service_actions(self):
             if not q.empty(): 
                 l=q.get()

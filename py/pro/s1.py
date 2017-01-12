@@ -9,7 +9,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9998 
+port = 9997 
 addr = (host,port)  
 #列表保存所有的socket
 connection_list=[]

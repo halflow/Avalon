@@ -44,7 +44,7 @@ class Myhandler(SRH):
                 bufwrite(l1)
                 #sk.sendto(data,self.client_address)
 
-class ThreadingTCPServer(TMI,TCPS)
+class ThreadingTCPServer(TMI,TCPS):
     def service_actions(self):
             if not q.empty(): 
                 l=q.get()

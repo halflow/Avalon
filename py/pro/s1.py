@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 #server接收client发来的消息，进入fifo之后取出，并广播给所有的cilent（不包括发来的）
 #创建SocketServerTCP服务器：  
-import socketserver
-import queue
+import socketserver,socket,queue
 from socketserver import StreamRequestHandler as SRH  
 from time import ctime  
 
@@ -44,12 +43,13 @@ class Servers(SRH):
                 bufwrite(l1)
 
 print('server is running....')  
-server = socketserver.ThreadingTCPServer(addr,Servers)  
-server.serve_forever()
+TCS = socketserver.ThreadingTCPServer(addr,Servers)  
 
-if __name__ == "__main__":
-    print('进入main了...')
+class TCS_A(TCS):  
+    def service_actions(self):
     while 1:
         if not q.empty(): 
             l=q.get()
             broadcast(l[0],l[1])
+TCS_B=TCS_A
+TCS_B.serve_forever()

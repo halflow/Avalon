@@ -9,7 +9,7 @@ from time import ctime
 q=queue.Queue(20)
   
 host = '192.168.1.108'  
-port = 9992 
+port = 9997 
 addr = (host,port)  
 #列表保存所有的socket
 connection_list=[]
@@ -36,6 +36,12 @@ def broadcast(sock,data_sent):
 class Myhandler(SRH):  
     def handle(self):  
         print('got connection from ',self.client_address)
+        """!!!!!request就是这个客户端的socket！！！
+        参考http://blog.csdn.net/songfreeman/article/details/50750680
+        通过调用request, client_address = self.get_request(),
+        返回self.socket.accept()
+        方法get_request()在类TCPServer中存在，并在_handle_request_noblock(self)中调用
+        """
         sockfd=self.request
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
@@ -47,6 +53,7 @@ class Myhandler(SRH):
                 #sk.sendto(data,self.client_address)
 
 class ThreadingTCPServer(TMI,TCPS):
+    allow_reuse_address = True
     def service_actions(self):
             if not q.empty(): 
                 l=q.get()

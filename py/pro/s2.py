@@ -36,7 +36,7 @@ def broadcast(sock,data_sent):
 class Myhandler(SRH):  
     def handle(self):  
         print('got connection from ',self.client_address)
-        sockfd=self.request.accept()
+        sockfd,add=self.request.accept()
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  

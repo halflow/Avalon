@@ -32,7 +32,7 @@ def broadcast(sock,data_sent):
                 #如果发送错误，则删除这个client socket             
                 #socketid.close()
                 #connection_list.remove(socketid)
-
+                qqq=1
 
 #Servers类	
 class Myhandler(SRH):  

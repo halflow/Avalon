@@ -30,9 +30,8 @@ def broadcast(sock,data_sent):
                 socketid.send(data_sent)
             except:
                 #如果发送错误，则删除这个client socket             
-                #socketid.close()
-                #connection_list.remove(socketid)
-                qqq=1
+                socketid.close()
+                connection_list.remove(socketid)
 
 #Servers类	
 class Myhandler(SRH):  
@@ -57,22 +56,12 @@ class Myhandler(SRH):
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
-            #try:
                 data = self.request.recv(50)  
                 #print(data.decode())
-                disconnected=1
                 if data:
                     l1=(sockfd,data)
-                    bufwrite(l1)
-                    #sk.sendto(data,self.client_address)
-            #except socket.error:
-             #   disconnected=True
-            
-                if disconnected:
-                    print(self.request.getpeername(),' disconnected.')
-                    #connection_list.remove(sockfd)
-                    #sockfd.close()
-                
+                    bufwrite(l1)         
+                    
 class ThreadingTCPServer(TMI,TCPS):
     #修改request队列为10,缺省值是5
     request_queue_size = 10    

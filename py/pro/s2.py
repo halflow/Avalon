@@ -32,7 +32,7 @@ def broadcast(sock,data_sent):
                 #如果发送错误，则删除这个client socket             
                 print(socketid.fd)
                 socketid.close()
-                connection_list.remove(socketid)
+                #connection_list.remove(socketid)
 
 
 #Servers类	

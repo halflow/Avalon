@@ -61,7 +61,7 @@ class Myhandler(SRH):
             #try:
                 data = self.request.recv(50)  
                 #print(data.decode())
-                disconnected=not data
+                disconnected=1
                 if data:
                     l1=(sockfd,data)
                     bufwrite(l1)

@@ -71,7 +71,7 @@ class Myhandler(SRH):
             
             if disconnected:
                 print(self.request.getpeername(),' disconnected.')
-                connection_list.remove(sockfd)
+                connection_list.remove(self.request)
                 sockfd.close()
                 
 class ThreadingTCPServer(TMI,TCPS):

@@ -30,6 +30,7 @@ def broadcast(sock,data_sent):
                 socketid.send(data_sent)
             except:
                 #如果发送错误，则删除这个client socket             
+                print(socketid.sin_addr)
                 socketid.close()
                 connection_list.remove(socketid)
 
@@ -56,7 +57,7 @@ class Myhandler(SRH):
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(50)  
-            print(data.decode())
+            #print(data.decode())
             if data:
                 l1=(sockfd,data)
                 bufwrite(l1)

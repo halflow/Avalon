@@ -30,7 +30,6 @@ def broadcast(sock,data_sent):
                 socketid.send(data_sent)
             except:
                 #如果发送错误，则删除这个client socket             
-                print(socketid.getpeername(),' disconnected.')
                 socketid.close()
                 connection_list.remove(socketid)
 
@@ -69,10 +68,10 @@ class Myhandler(SRH):
             #except socket.error:
              #   disconnected=True
             
-                # if disconnected:
-                    # print(self.request.getpeername(),' disconnected.')
-                    # connection_list.remove(self.request)
-                    # sockfd.close()
+                if disconnected:
+                    print(self.request.getpeername(),' disconnected.')
+                    connection_list.remove(sockfd)
+                    sockfd.close()
                 
 class ThreadingTCPServer(TMI,TCPS):
     #修改request队列为10,缺省值是5

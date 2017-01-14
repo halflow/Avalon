@@ -19,7 +19,7 @@ connection_list=[]
 def bufwrite(message):
     q.put(message)
 
-sk=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+#sk=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 #所有的反馈信息都广播到所有的socket
 def broadcast(sock,data_sent):
     for socketid in connection_list:
@@ -48,6 +48,8 @@ class Myhandler(SRH):
         返回self.socket.accept()
         方法get_request()在类TCPServer中存在，并在_handle_request_noblock(self)中调用
         """
+        #设置timeout
+        timeout = 1    
         sockfd=self.request
         #禁用 Nagle’s Algorithm,数据马上发送.setsockopt()里面的各种参数是unix系统或Windows系统提供的,应当去内核查询,(包括SOL_SOCKET等)
         sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,True)  
@@ -56,13 +58,22 @@ class Myhandler(SRH):
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
-            data = self.request.recv(50)  
-            #print(data.decode())
-            if data:
-                l1=(sockfd,data)
-                bufwrite(l1)
-                #sk.sendto(data,self.client_address)
-
+            try:
+                data = self.request.recv(50)  
+                #print(data.decode())
+                disconnected=not data
+                if data:
+                    l1=(sockfd,data)
+                    bufwrite(l1)
+                    #sk.sendto(data,self.client_address)
+            except socket.error:
+                disconnected=True
+            
+            if disconnected:
+                print(self.request.getpeername(),' disconnected.')
+                connection_list.remove(sockfd)
+                sockfd.close()
+                
 class ThreadingTCPServer(TMI,TCPS):
     #修改request队列为10,缺省值是5
     request_queue_size = 10    

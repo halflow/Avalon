@@ -49,7 +49,7 @@ class Myhandler(SRH):
         方法get_request()在类TCPServer中存在，并在_handle_request_noblock(self)中调用
         """
         #设置timeout
-        timeout = 5    
+        #timeout = 5    
         sockfd=self.request
         #禁用 Nagle’s Algorithm,数据马上发送.setsockopt()里面的各种参数是unix系统或Windows系统提供的,应当去内核查询,(包括SOL_SOCKET等)
         sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,True)  

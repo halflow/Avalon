@@ -69,10 +69,10 @@ class Myhandler(SRH):
             #except socket.error:
             #    disconnected=True
             
-            if disconnected:
-                print(self.request.getpeername(),' disconnected.')
-                connection_list.remove(self.request)
-                sockfd.close()
+                if disconnected:
+                    print(self.request.getpeername(),' disconnected.')
+                    connection_list.remove(self.request)
+                    sockfd.close()
                 
 class ThreadingTCPServer(TMI,TCPS):
     #修改request队列为10,缺省值是5

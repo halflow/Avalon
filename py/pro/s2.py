@@ -43,7 +43,7 @@ class Myhandler(SRH):
         方法get_request()在类TCPServer中存在，并在_handle_request_noblock(self)中调用
         """
         sockfd=self.request
-        
+        sockfd.setsockopt(socket.TCP_SOCKET,socket.TCP_NODELAY,True)       
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
@@ -58,7 +58,7 @@ class ThreadingTCPServer(TMI,TCPS):
     request_queue_size = 10    
     #允许重用端口,即server关闭后会主动释放这个端口
     allow_reuse_address = True
-    sockfd.setsockopt(socket.TCP_SOCKET,socket.TCP_NODELAY,True)
+
     def service_actions(self):
             if not q.empty(): 
                 l=q.get()

@@ -58,15 +58,16 @@ class Myhandler(SRH):
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
-            try:
+            #try:
                 data = self.request.recv(50)  
                 #print(data.decode())
+                disconnected=not data
                 if data:
                     l1=(sockfd,data)
                     bufwrite(l1)
                     #sk.sendto(data,self.client_address)
-            except socket.error:
-                disconnected=True
+            #except socket.error:
+            #    disconnected=True
             
             if disconnected:
                 print(self.request.getpeername(),' disconnected.')

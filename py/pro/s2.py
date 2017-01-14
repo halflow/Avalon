@@ -30,9 +30,10 @@ def broadcast(sock,data_sent):
                 socketid.send(data_sent)
             except:
                 #如果发送错误，则删除这个client socket
+                print(socketid.getpeername(),' has been disconnected from the console.')              
                 socketid.close()
                 connection_list.remove(socketid)
-                print(socketid.getpeername(),' has been disconnected from the console.')
+
 
 #Servers类	
 class Myhandler(SRH):  

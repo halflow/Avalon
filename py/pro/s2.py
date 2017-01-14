@@ -11,6 +11,7 @@ q=queue.Queue(20)
 host = '192.168.1.108'  
 port = 9997 
 addr = (host,port)  
+
 #列表保存所有的socket
 connection_list=[]
 
@@ -31,6 +32,7 @@ def broadcast(sock,data_sent):
                 #如果发送错误，则删除这个client socket
                 socketid.close()
                 connection_list.remove(socketid)
+                print(socketid.getpeername(),' has been disconnected from the console.')
 
 #Servers类	
 class Myhandler(SRH):  
@@ -43,6 +45,7 @@ class Myhandler(SRH):
         方法get_request()在类TCPServer中存在，并在_handle_request_noblock(self)中调用
         """
         sockfd=self.request
+        #禁用 Nagle’s Algorithm,数据马上发送.setsockopt()里面的各种参数是unix系统或Windows系统提供的,应当去内核查询,(包括SOL_SOCKET等)
         sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,True)       
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  

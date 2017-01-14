@@ -30,7 +30,7 @@ def broadcast(sock,data_sent):
                 socketid.send(data_sent)
             except:
                 #如果发送错误，则删除这个client socket
-                print(socketid.getpeername(),' has been disconnected from the console.')              
+                print(socketid.accept(),' has been disconnected from the console.')              
                 socketid.close()
                 connection_list.remove(socketid)
 
@@ -39,6 +39,8 @@ def broadcast(sock,data_sent):
 class Myhandler(SRH):  
     def handle(self):  
         print('got connection from ',self.client_address)
+        #或者使用print('got connection from ',self.request.getpeername()),
+        #注意:socket.getpeername()只有在双方通信正常时才能使用!!
         """!!!!!request就是这个客户端的socket！！！
         参考http://blog.csdn.net/songfreeman/article/details/50750680
         通过调用request, client_address = self.get_request(),
@@ -47,9 +49,10 @@ class Myhandler(SRH):
         """
         sockfd=self.request
         #禁用 Nagle’s Algorithm,数据马上发送.setsockopt()里面的各种参数是unix系统或Windows系统提供的,应当去内核查询,(包括SOL_SOCKET等)
-        sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,True)       
+        sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,True)  
+        #禁用TCP延迟ACK算法        
+        sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_QUICKACK,True)
         connection_list.append(sockfd)
-        print(self.request.getpeername(),' has been disconnected from the console.')
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(50)  
@@ -61,7 +64,7 @@ class Myhandler(SRH):
 class ThreadingTCPServer(TMI,TCPS):
     #修改request队列为10,缺省值是5
     request_queue_size = 10    
-    #允许重用端口,即server关闭后会主动释放这个端口
+    #允许重用地址,即server关闭后会主动释放这个ip和端口
     allow_reuse_address = True
 
     def service_actions(self):

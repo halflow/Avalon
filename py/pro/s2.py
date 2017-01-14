@@ -31,7 +31,7 @@ def broadcast(sock,data_sent):
             except:
                 #如果发送错误，则删除这个client socket             
                 print(socketid.fd)
-                socketid.close()
+                ##socketid.close()
                 #connection_list.remove(socketid)
 
 

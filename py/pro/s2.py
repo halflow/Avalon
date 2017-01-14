@@ -30,7 +30,8 @@ def broadcast(sock,data_sent):
                 socketid.send(data_sent)
             except:
                 #如果发送错误，则删除这个client socket
-                print(socketid.accept(),' has been disconnected from the console.')              
+                fd,address=socketid.accept()
+                print(address,' has been disconnected from the console.')              
                 socketid.close()
                 connection_list.remove(socketid)
 

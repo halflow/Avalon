@@ -43,7 +43,7 @@ class Myhandler(SRH):
         方法get_request()在类TCPServer中存在，并在_handle_request_noblock(self)中调用
         """
         sockfd=self.request
-        sockfd.setsockopt(socket.TCP_SOCKET,socket.TCP_NODELAY,True)       
+        sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,True)       
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  

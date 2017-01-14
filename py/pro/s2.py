@@ -30,7 +30,6 @@ def broadcast(sock,data_sent):
                 socketid.send(data_sent)
             except:
                 #如果发送错误，则删除这个client socket             
-                print(socketid.fd)
                 print(self.request.getpeername(),' disconnected.')
                 socketid.close()
                 connection_list.remove(socketid)

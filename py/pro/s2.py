@@ -49,6 +49,7 @@ class Myhandler(SRH):
         #禁用 Nagle’s Algorithm,数据马上发送.setsockopt()里面的各种参数是unix系统或Windows系统提供的,应当去内核查询,(包括SOL_SOCKET等)
         sockfd.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,True)       
         connection_list.append(sockfd)
+        print(self.request.getpeername(),' has been disconnected from the console.')
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(50)  

@@ -29,9 +29,7 @@ def broadcast(sock,data_sent):
             try:
                 socketid.send(data_sent)
             except:
-                #如果发送错误，则删除这个client socket
-                fd,address=socketid._accept()
-                print(address,' has been disconnected from the console.')              
+                #如果发送错误，则删除这个client socket             
                 socketid.close()
                 connection_list.remove(socketid)
 
@@ -42,6 +40,7 @@ class Myhandler(SRH):
         print('got connection from ',self.client_address)
         #或者使用print('got connection from ',self.request.getpeername()),
         #注意:socket.getpeername()只有在双方通信正常时才能使用!!
+        
         """!!!!!request就是这个客户端的socket！！！
         参考http://blog.csdn.net/songfreeman/article/details/50750680
         通过调用request, client_address = self.get_request(),
@@ -57,6 +56,7 @@ class Myhandler(SRH):
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
             data = self.request.recv(50)  
+            print(data.decode())
             if data:
                 l1=(sockfd,data)
                 bufwrite(l1)

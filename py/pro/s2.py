@@ -58,21 +58,21 @@ class Myhandler(SRH):
         connection_list.append(sockfd)
         #self.wfile.write('connection %s:%s at %s succeed!' % (host,port,ctime()))  
         while True:  
-            try:
+            #try:
                 data = self.request.recv(50)  
                 #print(data.decode())
-                disconnected=0
+                disconnected=not data
                 if data:
                     l1=(sockfd,data)
                     bufwrite(l1)
                     #sk.sendto(data,self.client_address)
-            except socket.error:
-                disconnected=True
+            #except socket.error:
+             #   disconnected=True
             
-            if disconnected:
-                print(self.request.getpeername(),' disconnected.')
-                connection_list.remove(self.request)
-                sockfd.close()
+                if disconnected:
+                    print(self.request.getpeername(),' disconnected.')
+                    connection_list.remove(self.request)
+                    sockfd.close()
                 
 class ThreadingTCPServer(TMI,TCPS):
     #修改request队列为10,缺省值是5

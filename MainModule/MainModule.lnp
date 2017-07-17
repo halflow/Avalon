@@ -1,0 +1,14 @@
+"STARTUP.obj",
+"MAIN.obj",
+"CONFIG.obj",
+"CONTROL.obj",
+"TELE_PACK.obj",
+"TELE_T_R.obj",
+"TELE_PARSE.obj",
+"RELAY.obj",
+"SCR.obj",
+"TELE_MANAGE.obj",
+"SENSOR_T_H.obj",
+"LUX_LIGHT.obj" 
+TO "MainModule" 
+RAMSIZE(256) 

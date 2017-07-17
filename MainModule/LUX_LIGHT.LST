@@ -1,0 +1,235 @@
+C51 COMPILER V9.50a   LUX_LIGHT                                                            07/17/2017 17:31:02 PAGE 1   
+
+
+C51 COMPILER V9.50a, COMPILATION OF MODULE LUX_LIGHT
+OBJECT MODULE PLACED IN LUX_LIGHT.OBJ
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE LUX_LIGHT.c LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          /*****************************************************************
+   2                                  LUX_LIGHT.C  file
+   3          
+   4          主要功能：负责定义光照度传感控制函数以及相应变量
+   5          
+   6          创建时间：2015.10.31
+   7          *****************************************************************/
+   8          
+   9          
+  10          #include "LUX_LIGHT.h"
+  11          #include "STC89C5xRC.h"
+  12          #include <intrins.h>
+  13          
+  14          //#define  SlaveAddress  0x46                                      //ADD引脚接地时，从地址为0x46，如果接电
+             -源，则为0xB8
+  15          
+  16          bit      Lux_Start_Flag;                                         //光照度传感器启动标志位
+  17          bit      Lux_Read_Flag;                                          //光照度传感器读取标志位
+  18          bit      Lux_Flag;                                               //转换时间计算标志位
+  19          
+  20          bit      Lux_Check_Flag;                    //监听标志位
+  21          
+  22          bit   Lux_Low_Flag;                     //低光照强度标志位
+  23          bit   Lux_High_Flag;                      //低光照强度标志位
+  24          
+  25          unsigned int Lux_Value;                                          //光照度值
+  26          unsigned int Lux_Counter;                                        //转换时间计算器
+  27          
+  28          
+  29          /*--------------------------------------------------------------*/
+  30          /*-----------------------IIC相关操作函数-----------------------*/
+  31          /*--------------------------------------------------------------*/
+  32          
+  33          /*------------------IIC起始信号--------------------*/
+  34          void IIC_start()
+  35          {
+  36   1        Lux_Data=1;
+  37   1        Lux_Sck=1;
+  38   1        _nop_();
+  39   1        _nop_();
+  40   1        _nop_();
+  41   1        Lux_Data=0;
+  42   1        _nop_();
+  43   1        _nop_();
+  44   1        _nop_();
+  45   1        Lux_Sck=0;
+  46   1        _nop_();
+  47   1        _nop_();
+  48   1        _nop_();
+  49   1      }
+  50          /*------------------IIC停止信号--------------------*/
+  51          void IIC_stop()
+  52          {
+  53   1        Lux_Data=0;
+  54   1        Lux_Sck=1;
+C51 COMPILER V9.50a   LUX_LIGHT                                                            07/17/2017 17:31:02 PAGE 2   
+
+  55   1        _nop_();
+  56   1        _nop_();
+  57   1        _nop_();
+  58   1        Lux_Data=1;
+  59   1        _nop_();
+  60   1        _nop_();
+  61   1        _nop_();
+  62   1      }
+  63          /*----------------IIC应答信号发送------------------*/
+  64          void IIC_sendack(bit ack)
+  65          {
+  66   1        Lux_Data=ack;                                //0为应答，1为非应答
+  67   1        Lux_Sck=1;
+  68   1        _nop_();
+  69   1        _nop_();
+  70   1        _nop_();
+  71   1        _nop_();
+  72   1        _nop_();
+  73   1        Lux_Sck=0;
+  74   1        _nop_();
+  75   1        _nop_();
+  76   1        _nop_();
+  77   1      }
+  78          /*----------------IIC应答信号接收------------------*/
+  79          bit IIC_recvack()
+  80          {
+  81   1        Lux_Sck=1;
+  82   1        _nop_();
+  83   1        _nop_();
+  84   1        _nop_();
+  85   1        _nop_();
+  86   1        _nop_();
+  87   1        CY=Lux_Data;
+  88   1        Lux_Sck=0;
+  89   1        _nop_();
+  90   1        _nop_();
+  91   1        _nop_();
+  92   1        
+  93   1        return CY;
+  94   1      }
+  95          /*---------------向IIC发送一字节数据---------------*/
+  96          void IIC_sendbyte(unsigned char dat)
+  97          {
+  98   1        unsigned char i;
+  99   1        
+ 100   1        for(i=0;i<8;i++)
+ 101   1        {
+ 102   2          dat<<=1;
+ 103   2          Lux_Data=CY;
+ 104   2          Lux_Sck=1;
+ 105   2          _nop_();
+ 106   2          _nop_();
+ 107   2          _nop_();
+ 108   2          _nop_();
+ 109   2          _nop_();
+ 110   2          Lux_Sck=0;
+ 111   2          _nop_();
+ 112   2          _nop_();
+ 113   2          _nop_();
+ 114   2        }
+ 115   1        IIC_recvack();
+ 116   1      }
+C51 COMPILER V9.50a   LUX_LIGHT                                                            07/17/2017 17:31:02 PAGE 3   
+
+ 117          /*---------------从IIC接收一字节数据---------------*/
+ 118          unsigned char IIC_recvbyte()
+ 119          {
+ 120   1        unsigned char i;
+ 121   1        unsigned char dat=0;
+ 122   1        
+ 123   1        Lux_Data=1;
+ 124   1        for(i=0;i<8;i++)
+ 125   1        {
+ 126   2          dat<<=1;
+ 127   2          Lux_Sck=1;
+ 128   2          _nop_();
+ 129   2          _nop_();
+ 130   2          _nop_();
+ 131   2          _nop_();
+ 132   2          dat|=Lux_Data;
+ 133   2          Lux_Sck=0;
+ 134   2          _nop_();
+ 135   2          _nop_();
+ 136   2          _nop_();
+ 137   2        }
+ 138   1        return dat;
+ 139   1      }
+ 140          
+ 141          
+ 142          /*--------------------------------------------------------------*/
+ 143          /*---------------------光照度传感器初始化----------------------*/
+ 144          /*-------------------------------------------------------------*/
+ 145          void init_lux()
+ 146          {
+ 147   1        Lux_Start_Flag=0;
+ 148   1        Lux_Read_Flag=0;
+ 149   1        Lux_Flag=0;
+ 150   1        Lux_Counter=0;
+ 151   1        Lux_Check_Flag=1;
+ 152   1        Lux_Low_Flag=0;
+ 153   1        Lux_High_Flag=0;
+ 154   1      }
+ 155          
+ 156          /*--------------------------------------------------------------*/
+ 157          /*----------------------启动光照度传感器-----------------------*/
+ 158          /*--------------------------------------------------------------*/
+ 159          void start_lux()
+ 160          {
+ 161   1        Lux_Start_Flag=0;                                       //清零光照度传感器启动标志位
+ 162   1        
+ 163   1        IIC_start();
+ 164   1        IIC_sendbyte(0x46);                      //Addr引脚接地      //发送设备地址（0110 011）+写信号（0）
+ 165   1        IIC_sendbyte(0x01);                                     //传感器通电命令
+ 166   1        IIC_stop();
+ 167   1        
+ 168   1        IIC_start();
+ 169   1        IIC_sendbyte(0x46);
+ 170   1        IIC_sendbyte(0x20);                                     //进行一次高分辨率测量命令
+ 171   1        IIC_stop();
+ 172   1        
+ 173   1        Lux_Flag=1;                         //计时标志位       //光照度传感器测量时间计数标志位置位
+ 174   1      }
+ 175          
+ 176          /*--------------------------------------------------------------*/
+ 177          /*----------------------读取光照度传感器-----------------------*/
+ 178          /*--------------------------------------------------------------*/
+C51 COMPILER V9.50a   LUX_LIGHT                                                            07/17/2017 17:31:02 PAGE 4   
+
+ 179          void read_lux()
+ 180          {
+ 181   1        unsigned char j;
+ 182   1        unsigned int k=0;
+ 183   1        
+ 184   1        Lux_Read_Flag=0;                                         //清零光照度传感器读取标志位
+ 185   1        
+ 186   1        IIC_start();
+ 187   1        IIC_sendbyte(0x47);                                      //发送设备地址（0100 011）+读信号（1）
+ 188   1        
+ 189   1        j=IIC_recvbyte();                                        //读取高八位数据
+ 190   1        IIC_sendack(0);                                          //发送0应答，继续读取数据
+ 191   1        k=j;
+ 192   1        
+ 193   1        j=IIC_recvbyte();                                        //读取低八位数据
+ 194   1        IIC_sendack(1);                                          //发送1应答，结束数据读取
+ 195   1        Lux_Value=(k<<8)+j;
+ 196   1        
+ 197   1        IIC_stop();                                              //IIC停止
+ 198   1        
+ 199   1        Lux_Value=(float)Lux_Value/1.2;                          //准确的光照度值
+ 200   1        
+ 201   1        //测试用
+ 202   1        //Lux_Pack_Flag=1;
+ 203   1        //测试用
+ 204   1      //  lux_judge();
+ 205   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    272    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      4    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      6       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

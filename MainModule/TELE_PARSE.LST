@@ -1,0 +1,1388 @@
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 1   
+
+
+C51 COMPILER V9.50a, COMPILATION OF MODULE TELE_PARSE
+OBJECT MODULE PLACED IN TELE_PARSE.OBJ
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE TELE_PARSE.c LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          /*****************************************************************
+   2                                  TELE_PARSE.c  file
+   3          
+   4          主要功能：根据感应器输入或者接收的报文命令组装报文
+   5          
+   6          创建时间：2015.10.31
+   7          *****************************************************************/
+   8          /*--------------------------------------------------------------*/
+   9          /*----------------------------头文件----------------------------*/
+  10          /*--------------------------------------------------------------*/
+  11          #include "TELE_PARSE.h"
+  12          #include "TELE_MANAGE.h"
+  13          #include "CONFIG.h"
+  14          #include "RELAY.h"
+  15          #include "SCR.h"
+  16          #include "TELE_T_R.h"
+  17          #include "TELE_PACK.h"
+  18          #include "SENSOR_T_H.h"
+  19          #include "LUX_LIGHT.h"
+  20          #include "CONTROL.h"
+  21          
+  22          /*--------------------------------------------------------------*/
+  23          /*--------------------------报文解析函数-----------------------*/
+  24          /*--------------------------------------------------------------*/
+  25          unsigned char tele[10];                     //用于存放从接收缓冲队列中取出的报文
+  26          unsigned char tele_backup[10];            //用于延时跳转指令缓存
+  27          unsigned char tele_backup2[10];           //用于非延时跳转指令缓存
+  28          unsigned char jump_tele[28]={0};
+  29          unsigned char Key_Num1,Digital_Num1,Analog_Num1,Relay_Num1,Scr_Num1;
+  30          unsigned int addr;
+  31          unsigned char style;                //用以区分长短停
+  32          unsigned char Delay_Time1,Delay_Time2,Delay_Time3,Delay_Time4;              //跳转前延时时间
+  33          unsigned char Which_One;
+  34          bit Delay_Flag1,Delay_Flag2,Delay_Flag3,Delay_Flag4;
+  35          unsigned char temper;
+  36          void tele_parse()
+  37          {
+  38   1        unsigned char i,Key_Num,Digital_Num,Analog_Num,Relay_Num,Scr_Num;
+  39   1        unsigned char k;                  //取出报文的个数
+  40   1        Tele_Handle_R=0;                                    //清空接收缓冲区报文处理标志位
+  41   1        Tele_Cheak_R=0;                                     //暂停报文接收缓冲队列检测
+  42   1      
+  43   1        k=read_tele_r(tele);                //将调用的函数里面date[]进行报文取出，赋给tele[]
+  44   1        
+  45   1        /*------------------------*////模块操作//*-------------------------------------*//
+  46   1        if(Module_Operate_Flag)
+  47   1        { 
+  48   2          Module_Operate_Flag=0;
+  49   2           /*-----------------------解析报文：指令报文---------------------------*/
+  50   2          if((tele[2]&0xC0)==0x00) //属性判断帧                   
+  51   2          {
+  52   3            if((tele[3]&0xC0)==0x00)                //判断为非跳转指令
+  53   3            {
+  54   4              //////继电器控制指令    
+  55   4              if((tele[4]&0x0F)==0x00)                      //继电器口控制
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 2   
+
+  56   4              {
+  57   5                if(rom_r(0xA801)!=0xff)           //继电器1状态发生变化判断是否已经配置并且需要触发
+  58   5                  Relay1_Alconfig_Flag=1;         //表示继电器1输出已配置
+  59   5                if(rom_r(0xAA01)!=0xff)
+  60   5                  Relay2_Alconfig_Flag=1;         //表示继电器1输出已配置
+  61   5                if(rom_r(0xAC01)!=0xff)
+  62   5                  Relay3_Alconfig_Flag=1;         //表示继电器1输出已配置
+  63   5                if(rom_r(0xAE01)!=0xff)
+  64   5                  Relay4_Alconfig_Flag=1;         //表示继电器1输出已配置         
+  65   5                switch(tele[5]&0x03)                          //检测继电器口1控制命令
+  66   5                {                      
+  67   6                  case 0x00:  Relay_Value=Relay_Value&0xFE;   //继电器口1关
+  68   6                              break;
+  69   6                  case 0x01:  Relay_Value=Relay_Value|0x01;   //继电器口1开
+  70   6                              break;
+  71   6                  case 0x02:  Relay_Value=Relay_Value^0x01;   //继电器口1状态切换
+  72   6                              break;
+  73   6                  default:    break;                          //继电器口1不做任何改变
+  74   6                }
+  75   5                
+  76   5                switch(tele[5]&0x0C)                          //检测继电器口2控制命令
+  77   5                {
+  78   6                  case 0x00:  Relay_Value=Relay_Value&0xFD;   //继电器口2关
+  79   6                              break;
+  80   6                  case 0x04:  Relay_Value=Relay_Value|0x02;   //继电器口2开
+  81   6                              break;
+  82   6                  case 0x08:  Relay_Value=Relay_Value^0x02;   //继电器口2状态切换
+  83   6                              break;
+  84   6                  default:    break;                          //继电器口2不做任何改变
+  85   6                }
+  86   5                
+  87   5                switch(tele[5]&0x30)                          //检测继电器口3控制命令
+  88   5                {
+  89   6                  case 0x00:  Relay_Value=Relay_Value&0xFB;   //继电器口3关
+  90   6                              break;
+  91   6                  case 0x10:  Relay_Value=Relay_Value|0x04;   //继电器口3开
+  92   6                              break;
+  93   6                  case 0x20:  Relay_Value=Relay_Value^0x04;   //继电器口3状态切换
+  94   6                              break;
+  95   6                  default:    break;                          //继电器口3不做任何改变
+  96   6                }
+  97   5                
+  98   5                switch(tele[5]&0xC0)                          //检测继电器口4控制命令
+  99   5                {
+ 100   6                  case 0x00:  Relay_Value=Relay_Value&0xF7;   //继电器口4关
+ 101   6                              break;
+ 102   6                  case 0x40:  Relay_Value=Relay_Value|0x08;   //继电器口4开
+ 103   6                              break;
+ 104   6                  case 0x80:  Relay_Value=Relay_Value^0x08;   //继电器口4状态切换
+ 105   6                              break;
+ 106   6                  default:    break;                          //继电器口4不做任何改变
+ 107   6                }
+ 108   5                
+ 109   5                switch(tele[6]&0x03)                          //检测继电器口5控制命令
+ 110   5                {
+ 111   6                  case 0x00:  Relay_Value=Relay_Value&0xEF;   //继电器口5关
+ 112   6                              break;
+ 113   6                  case 0x01:  Relay_Value=Relay_Value|0x10;   //继电器口5开
+ 114   6                              break;
+ 115   6                  case 0x02:  Relay_Value=Relay_Value^0x10;   //继电器口5状态切换
+ 116   6                              break;
+ 117   6                  default:    break;                          //继电器口5不做任何改变
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 3   
+
+ 118   6                }
+ 119   5                
+ 120   5                switch(tele[6]&0x0C)                          //检测继电器口6控制命令
+ 121   5                {
+ 122   6                  case 0x00:  Relay_Value=Relay_Value&0xDF;   //继电器口6关
+ 123   6                              break;
+ 124   6                  case 0x04:  Relay_Value=Relay_Value|0x20;   //继电器口6开
+ 125   6                              break;
+ 126   6                  case 0x08:  Relay_Value=Relay_Value^0x20;   //继电器口6状态切换
+ 127   6                              break;
+ 128   6                  default:    break;                          //继电器口6不做任何改变
+ 129   6                }
+ 130   5                
+ 131   5                switch(tele[6]&0x30)                          //检测继电器口7控制命令
+ 132   5                {
+ 133   6                  case 0x00:  Relay_Value=Relay_Value&0xBF;   //继电器口7关
+ 134   6                              break;
+ 135   6                  case 0x10:  Relay_Value=Relay_Value|0x40;   //继电器口7开
+ 136   6                              break;
+ 137   6                  case 0x20:  Relay_Value=Relay_Value^0x40;   //继电器口7状态切换
+ 138   6                              break;
+ 139   6                  default:    break;                          //继电器口7不做任何改变
+ 140   6                }
+ 141   5                
+ 142   5                switch(tele[6]&0xC0)                          //检测继电器口8控制命令
+ 143   5                {
+ 144   6                  case 0x00:  Relay_Value=Relay_Value&0x7F;   //继电器口8关
+ 145   6                              break;
+ 146   6                  case 0x40:  Relay_Value=Relay_Value|0x80;   //继电器口8开
+ 147   6                              break;
+ 148   6                  case 0x80:  Relay_Value=Relay_Value^0x80;   //继电器口8状态切换
+ 149   6                              break;
+ 150   6                  default:    break;                          //继电器口8不做任何改变
+ 151   6                }
+ 152   5                
+ 153   5                relay_handle();                              /*继电器报文解析完毕，进行处理*/
+ 154   5              }
+ 155   4              //////硅控口控制指令
+ 156   4              else if((tele[4]&0x0F)==0x01)                   //硅控口1控制指令
+ 157   4              {
+ 158   5                if(rom_r(0xB801)!=0xff)           //可控硅状态发生变化判断是否需要触发
+ 159   5                  Scr1_Alconfig_Flag=1;         //表示可控硅1已配置
+ 160   5                switch(tele[4]&0x70)
+ 161   5                {
+ 162   6                  case 0x00:  SCR1_value=tele[5];             //bit6-bit4=000//硅控口1值设定
+ 163   6                              SCR1_Flag=1;    //组装反馈报文标志位置1
+ 164   6                              break;          
+ 165   6                  case 0x10:  if(SCR1_value==0xF0)            //硅控口1状态切换
+ 166   6                          SCR1_value=1;
+ 167   6                        else
+ 168   6                          SCR1_value=0xF0;                
+ 169   6                              SCR1_Flag=1;       //可控硅口1反馈标志位置1---->>主函数
+ 170   6                              break;
+ 171   6                  
+ 172   6                  case 0x20:  SCR1_control_flag=1;            //硅控口1自增自减
+ 173   6                              SCR1_Flag=1;
+ 174   6                              break;
+ 175   6                    case 0x40:  SCR1_control_flag=1;            //硅控口1自增到X值
+ 176   6                        
+ 177   6                                break;
+ 178   6                  case 0x50:  SCR1_control_flag=0;            //硅控口1自增自减停止
+ 179   6                        SCR_control_counter=0;
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 4   
+
+ 180   6                        SCR1_status=!SCR1_status;
+ 181   6                              SCR1_Flag=1;
+ 182   6                              break;                      
+ 183   6                  default:    break;
+ 184   6                }
+ 185   5              }
+ 186   4              else if((tele[4]&0x0F)==0x02)                   //硅控口2控制指令
+ 187   4              {
+ 188   5                if(rom_r(0xBA01)!=0xff)
+ 189   5                  Scr2_Alconfig_Flag=1;         //表示可控硅2已配置
+ 190   5                switch(tele[4]&0x70)
+ 191   5                {
+ 192   6                  case 0x00:  SCR2_value=tele[5];             //硅控口2值设定
+ 193   6                              SCR2_Flag=1;
+ 194   6                              break;
+ 195   6                  
+ 196   6                  case 0x10:  if(SCR2_value==0xF0)            //硅控口2状态切换
+ 197   6                          SCR2_value=1;
+ 198   6                        else
+ 199   6                          SCR2_value=0xF0;
+ 200   6                              SCR2_Flag=1;
+ 201   6                              break;
+ 202   6                  
+ 203   6                  case 0x20:  SCR2_control_flag=1;            //硅控口2自增自减
+ 204   6                              SCR2_Flag=1;
+ 205   6                              break;
+ 206   6                  
+ 207   6                  case 0x50:  SCR2_control_flag=0;            //硅控口2自增自减停止
+ 208   6                        SCR_control_counter=0;
+ 209   6                        SCR2_status=!SCR2_status;
+ 210   6                              SCR2_Flag=1;
+ 211   6                              break;                      
+ 212   6                  default:break;
+ 213   6                }
+ 214   5              }
+ 215   4            }
+ 216   3            else if((tele[3]&0x80)==0x80)         //若为跳转指令
+ 217   3            {
+ 218   4              if((tele[3]&0x40)==0x40)          //若跳转指令带有延时
+ 219   4              {
+ 220   5                led0=~led0;
+ 221   5                for(i=0;i<10;i++)
+ 222   5                {
+ 223   6                  tele_backup[i]=tele[i];       //将报文进行备份，为了防止非跳转指令破坏跳转指令的数据
+ 224   6                }
+ 225   5                Which_One=jumptele_write();       //判断缓存空间是否满，不满写入缓存      
+ 226   5                switch(Which_One)           //经过此函数，已将tele_backup换写到jump_tele数组
+ 227   5                {
+ 228   6                  case 1:
+ 229   6                    switch(jump_tele[6]&0xC0)             //判断延时单位
+ 230   6                    {
+ 231   7                      case 0x00:Delay_Time1=(jump_tele[6]&0x0F);break;  //取出延时时间
+ 232   7                      case 0x40:break;
+ 233   7                      default:break;
+ 234   7                    }
+ 235   6                    Delay_Flag1=1;
+ 236   6                    break;
+ 237   6                  case 2: 
+ 238   6                    switch(jump_tele[13]&0xC0)              //判断延时单位
+ 239   6                    {
+ 240   7                      case 0x00:Delay_Time2=(jump_tele[13]&0x0F);break; //取出延时时间
+ 241   7                      case 0x40:break;
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 5   
+
+ 242   7                      default:break;
+ 243   7                    }
+ 244   6                    Delay_Flag2=1;
+ 245   6                    break;
+ 246   6                  case 3: 
+ 247   6                    switch(jump_tele[20]&0xC0)              //判断延时单位
+ 248   6                    {
+ 249   7                      case 0x00:Delay_Time3=(jump_tele[20]&0x0F);break; //取出延时时间
+ 250   7                      case 0x40:break;
+ 251   7                      default:break;
+ 252   7                    }
+ 253   6                    Delay_Flag3=1;
+ 254   6                    break;
+ 255   6                  case 4:             
+ 256   6                    switch(jump_tele[26]&0xC0)              //判断延时单位
+ 257   6                    {
+ 258   7                      case 0x00:Delay_Time4=(jump_tele[26]&0x0F);break; //取出延时时间
+ 259   7                      case 0x40:break;
+ 260   7                      default:break;
+ 261   7                    }
+ 262   6                    Delay_Flag4=1;
+ 263   6                    break;
+ 264   6                  default:break;
+ 265   6                }
+ 266   5              }
+ 267   4              else                    //若跳转指令不带有延时
+ 268   4              {
+ 269   5                led1=~led1;
+ 270   5                for(i=0;i<10;i++)
+ 271   5                {
+ 272   6                  tele_backup2[i]=tele[i];      //将报文进行备份，为了防止非跳转指令破坏跳转指令的数据
+ 273   6                }
+ 274   5                jump_order2();
+ 275   5              }
+ 276   4            }
+ 277   3          }
+ 278   2           /*----------------解析报文为配置报文----------------------------*///tele[2]属性，tele[3]种类帧1，tele[4
+             -]种类帧2
+ 279   2          else if((tele[2]&0xC0)==0x40)                 //判断报文属性 类型配置报文
+ 280   2          {
+ 281   3            if((tele[3]&0xF0)==0x00)                /*--------配置模块属性------------*/
+ 282   3            {       
+ 283   4              switch(tele[3]&0x0F)
+ 284   4              {
+ 285   5                case 0x00:
+ 286   5                {
+ 287   6                  switch(tele[4]&0xF0)
+ 288   6                  {
+ 289   7                    case 0x00:  ID_GP_Q[0]=tele[5];     //群ID
+ 290   7                          break;
+ 291   7                    case 0x10:  ID_GP_Q[1]=tele[5];     //模块ID 
+ 292   7                          break;
+ 293   7                    case 0x20:  ID_GP_Q[2]=tele[5];     //组ID               
+ 294   7                          break;    
+ 295   7                    default: break;         
+ 296   7                  }
+ 297   6                  id_Gp_Q_save();
+ 298   6                  config_success();
+ 299   6                }break;
+ 300   5                case 0x01:  
+ 301   5                {
+ 302   6                  switch(tele[4])
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 6   
+
+ 303   6                  {
+ 304   7                    case 0x00:delete_all_e2prom();
+ 305   7                      break;
+ 306   7                    default:break;
+ 307   7                  }
+ 308   6                  config_success();
+ 309   6                }break;
+ 310   5                default:break;          
+ 311   5              }
+ 312   4             }    
+ 313   3            if((tele[3]&0xF0)==0x30)              //模拟量配置信息      
+ 314   3            {     
+ 315   4              switch(tele[3]&0x0F)            /*-------配置3路模拟量传感的阈值------*/
+ 316   4              {
+ 317   5                case 0x00:
+ 318   5                    switch(tele[4])
+ 319   5                    {
+ 320   6                      case 0x50:Analog_Threshold[0]=tele[5];    //第一路上阈值
+ 321   6                            break;
+ 322   6                      case 0x60:Analog_Threshold[1]=tele[5];    //第一路下阈值
+ 323   6                            break;
+ 324   6                      default:    break;
+ 325   6                      
+ 326   6                    }
+ 327   5                    break;
+ 328   5                case 0x01:
+ 329   5                    switch(tele[4])
+ 330   5                    {
+ 331   6                      case 0x50:Analog_Threshold[2]=tele[5];    //第二路上阈值
+ 332   6                            break;
+ 333   6                      case 0x60:Analog_Threshold[3]=tele[5];    //第二路下阈值
+ 334   6                            break;
+ 335   6                      default:    break;                
+ 336   6                    }         
+ 337   5                    break;
+ 338   5                case 0x02:
+ 339   5                    switch(tele[4])
+ 340   5                    {
+ 341   6                      case 0x50:Analog_Threshold[4]=tele[5];    //第三路上阈值  
+ 342   6                            break;
+ 343   6                      case 0x60:Analog_Threshold[5]=tele[5];    //第三路下阈值
+ 344   6                            break;
+ 345   6                      default:    break;
+ 346   6                    }         
+ 347   5                    break;
+ 348   5                default:break;
+ 349   5              }
+ 350   4              id_Gp_Q_save();
+ 351   4              config_success();
+ 352   4      
+ 353   4            }       
+ 354   3            if((tele[3]&0xF0)==0x10)        /*-----配置8路按键开关绑定--------*/
+ 355   3            {
+ 356   4              Key_Num=tele[3]&0x0F;           //获取配置的哪路按键
+ 357   4              for(i=0;i<191;i++)              //将先前配置信息缓存到RAM
+ 358   4              {
+ 359   5                Write_Cache[i]=rom_r(0x8200+(Key_Num<<9)+i);    //相当于key_num*512
+ 360   5              }
+ 361   4              switch(Key_Num)//tele[3]&0x0F
+ 362   4              {
+ 363   5                case 0x00:key_config();               //第一路开关            
+ 364   5                    break;
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 7   
+
+ 365   5                case 0x01:key_config();               //第二路开关              
+ 366   5                    break;
+ 367   5                case 0x02:key_config();               //第三路开关
+ 368   5                    break;
+ 369   5                case 0x03:key_config();               //第四路开关
+ 370   5                    break;
+ 371   5                case 0x04:key_config();               //第五路开关
+ 372   5                    break;
+ 373   5                case 0x05:key_config();               //第六路开关//使用中
+ 374   5                    break;
+ 375   5                case 0x06:key_config();               //第七路开关//使用中
+ 376   5                    break;
+ 377   5                case 0x07:key_config();               //第八路开关//使用中
+ 378   5                    break;
+ 379   5                default:break;
+ 380   5              }
+ 381   4              rom_c(0x8200+(Key_Num<<9));       //先擦出对应的扇区
+ 382   4              for(i=0;i<191;i++)              //将缓存到RAM中修改的数据写到EEPROM
+ 383   4              {
+ 384   5                rom_w((0x8200+(Key_Num<<9)+i),Write_Cache[i]);
+ 385   5              }
+ 386   4              config_success();
+ 387   4            }
+ 388   3                if((tele[3]&0xF0)==0x20)          /*-------配置8路数字量开关类传感器---------*/
+ 389   3            {
+ 390   4              for(i=0;i<191;i++)
+ 391   4                Write_Cache[i]=rom_r(0x9200+i);
+ 392   4              switch(tele[3]&0x0F)              //第一路：声音
+ 393   4              {     
+ 394   5                case 0x00: key_config();
+ 395   5                        break;
+ 396   5                default:break;
+ 397   5              }
+ 398   4              rom_c(0x9200);
+ 399   4              for(i=0;i<191;i++)
+ 400   4                rom_w(0x9200+i,Write_Cache[i]);
+ 401   4              config_success();
+ 402   4            }   
+ 403   3            if((tele[3]&0xF0)==0x30)          /*-------配置3路模拟量传感器---------*/
+ 404   3            {
+ 405   4              for(i=0;i<191;i++)
+ 406   4                Write_Cache[i]=rom_r(0xA200+i);
+ 407   4              switch(tele[3]&0x0F)              //第1路：光照
+ 408   4              {
+ 409   5                case 0x00: key_config();
+ 410   5                      break;
+ 411   5                default:break;
+ 412   5              }
+ 413   4              rom_c(0xA200);
+ 414   4              for(i=0;i<191;i++)
+ 415   4                rom_w(0xA200+i,Write_Cache[i]); 
+ 416   4              config_success();     
+ 417   4            }  
+ 418   3            if((tele[3]&0xF0)==0x40)          /*-----配置8路继电器状态输出----------*/
+ 419   3            {
+ 420   4              Relay_Num=tele[3]&0x0F;
+ 421   4              for(i=0;i<191;i++)
+ 422   4                Write_Cache[i]=rom_r(0xA800+(Relay_Num<<9)+i);
+ 423   4              switch(tele[3]&0x0F)              //第1路继电器/////先做测试
+ 424   4              {
+ 425   5                case 0x00: key_config();
+ 426   5                      break;
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 8   
+
+ 427   5                case 0x01: key_config();
+ 428   5                      break;
+ 429   5                case 0x02: key_config();
+ 430   5                      break;
+ 431   5                case 0x03: key_config();
+ 432   5                      break;
+ 433   5                default:break;
+ 434   5              }
+ 435   4              rom_c(0xA800+(Relay_Num<<9));
+ 436   4      //        rom_w(0x6800,0xAA);               //第一路继电器配置标志位
+ 437   4              for(i=0;i<191;i++)
+ 438   4                rom_w(0xA800+(Relay_Num<<9)+i,Write_Cache[i]);
+ 439   4              config_success(); 
+ 440   4            }
+ 441   3            if((tele[3]&0xF0)==0x50)          /*--------配置2路可控硅状态输出-------*/
+ 442   3            {
+ 443   4              Scr_Num=(tele[3]&0x0F);
+ 444   4              for(i=0;i<191;i++)
+ 445   4                Write_Cache[i]=rom_r(0xB800+(Scr_Num<<9)+i);
+ 446   4              switch(Scr_Num)//tele[3]&0x0F             
+ 447   4              {
+ 448   5                case 0x00: key_config();          //第1路可控硅配置
+ 449   5                      break;
+ 450   5                case 0x01: key_config();          //第二路可控硅配置
+ 451   5                      break;
+ 452   5                default:break;
+ 453   5              }
+ 454   4              rom_c(0xB800+(Scr_Num<<9));
+ 455   4              for(i=0;i<191;i++)
+ 456   4                rom_w(0xB800+(Scr_Num<<9)+i,Write_Cache[i]);
+ 457   4              config_success(); 
+ 458   4            }                               
+ 459   3          }
+ 460   2           /*---------------------------解析报文为反馈报文------------------------------------*/
+ 461   2          else if((tele[2]&0xC0)==0x80)                      
+ 462   2          {
+ 463   3            //主模块不会接收到反馈报文，只有网关模块会接收反馈报文
+ 464   3          }
+ 465   2          /*----------------------------解析报文为查询报文-----------------------------------*/
+ 466   2          else if((tele[2]&0xC0)==0xC0)                       
+ 467   2          {       
+ 468   3              switch(tele[3]&0xF0)              //数据域的第一帧高四位：查询类型
+ 469   3              {     
+ 470   4                case 0x00:                    /*------查询模块属性-------*/
+ 471   4                  switch(tele[3]&0x0F)
+ 472   4                  {
+ 473   5                    case 0x00: tele_pack_id();break;          //模块ID查询
+ 474   5                    case 0x01: tele_pack_Module_Contain_Group();break;  //模块组查询
+ 475   5                    default: break;
+ 476   5                  }
+ 477   4                  break;  
+ 478   4                case 0x10:                    /*--------查询开关配置-----*/
+ 479   4                  Key_Num=tele[3]&0x0F;
+ 480   4                  Key_Num1=tele[3];
+ 481   4                  Digital_Num1=0;Analog_Num1=0;Relay_Num1=0;Scr_Num1=0;
+ 482   4                  addr=0x8200+(Key_Num<<9);
+ 483   4      
+ 484   4                  switch(Key_Num)//tele[3]&0x0F             
+ 485   4                  {
+ 486   5                    case 0x00:  key_inquire(addr);                //第1路开关查询                 
+ 487   5                        break;
+ 488   5                    case 0x01:  key_inquire(addr);                //第2路开关查询                 
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 9   
+
+ 489   5                        break;
+ 490   5                    case 0x02:  key_inquire(addr);                //第3路开关查询
+ 491   5                        break;
+ 492   5                    case 0x03:  key_inquire(addr);                //第4路开关查询 
+ 493   5                        break;
+ 494   5                    case 0x04:  key_inquire(addr);                //第5路开关查询
+ 495   5                        break;
+ 496   5                    case 0x05:  key_inquire(addr);                //第6路开关查询
+ 497   5                        break;
+ 498   5                    case 0x06:  key_inquire(addr);                //第7路开关查询
+ 499   5                        break;
+ 500   5                    case 0x07:  key_inquire(addr);                //第8路开关查询
+ 501   5                        break;
+ 502   5                    default: break;
+ 503   5                  }
+ 504   4                  break;
+ 505   4                case 0x20:                  /*-----查询数字量传感器配置----*/
+ 506   4                  Digital_Num=tele[3]&0x0F;       //判断第几路
+ 507   4                  Digital_Num1=tele[3];
+ 508   4                  Key_Num1=0;Analog_Num1=0;Relay_Num1=0;Scr_Num1=0;
+ 509   4                  addr=0x9200+(Digital_Num<<9);
+ 510   4      
+ 511   4                  switch(Digital_Num)//tele[3]&0x0F       
+ 512   4                  {
+ 513   5                    case 0x00:            //第一路数字量传感器
+ 514   5                      switch(tele[4]&0xF0)
+ 515   5                      {
+ 516   6                        case 0x00:key_inquire(addr);break;    //触发出现
+ 517   6                        case 0x10:key_inquire(addr);break;    //触发消失
+ 518   6                        default: break;
+ 519   6                      }break;
+ 520   5                    case 0x01:            //第二路数字量传感器
+ 521   5                      switch(tele[4]&0xF0)
+ 522   5                      {
+ 523   6                        case 0x00:key_inquire(addr);break;
+ 524   6                        case 0x10:key_inquire(addr);break;
+ 525   6                        default: break;
+ 526   6                      }break;
+ 527   5                    default: break;
+ 528   5                  }
+ 529   4                  break;
+ 530   4                case 0x30:                  /*-----查询模拟量传感器配置----*/
+ 531   4                    Analog_Num=tele[3]&0x0F;
+ 532   4                    Analog_Num1=tele[3];
+ 533   4                    Key_Num1=0;Digital_Num1=0;Relay_Num1=0;Scr_Num1=0;
+ 534   4                    addr=0xA200+(Analog_Num<<9);
+ 535   4                    
+ 536   4                    switch(Analog_Num)//tele[3]&0x0F
+ 537   4                    {
+ 538   5                      case 0x00:
+ 539   5                          switch(tele[4])
+ 540   5                          {
+ 541   6                            case 0x00:key_inquire(addr);          //上阈值触发配置信息查询
+ 542   6                              break;
+ 543   6                            case 0x10:key_inquire(addr);          //下阈值配置信息查询
+ 544   6                              break;
+ 545   6                            case 0x40:                  //上下阈值配置信息查询
+ 546   6                              break;
+ 547   6                            default: break;
+ 548   6                          }
+ 549   5                        break;
+ 550   5                    }
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 10  
+
+ 551   4                    break;              
+ 552   4                case 0x40:                /*-----查询继电器输出状态配置-------*/
+ 553   4                    Relay_Num=tele[3]&0x0F;
+ 554   4                    Relay_Num1=tele[3];
+ 555   4                    Key_Num1=0;Digital_Num1=0;Analog_Num1=0;Scr_Num1=0;
+ 556   4                    addr=0xA800+(Relay_Num<<9);
+ 557   4                  
+ 558   4                    switch(Relay_Num)//tele[3]&0x0F
+ 559   4                    {
+ 560   5                      case 0x00:          //第一路继电器配置查询
+ 561   5                          switch(tele[4])
+ 562   5                          {
+ 563   6                            case 0x00:key_inquire(addr);break;      //继电器开启配置查询
+ 564   6                            case 0x01:key_inquire(addr);break;      //继电器关闭配置查询
+ 565   6                            default:break;
+ 566   6                          }
+ 567   5                          break;
+ 568   5                      case 0x01:          //第二路继电器配置查询
+ 569   5                          switch(tele[4])
+ 570   5                          {
+ 571   6                            case 0x00:key_inquire(addr);break;      //继电器开启配置查询
+ 572   6                            case 0x10:key_inquire(addr);break;      //继电器关闭配置查询
+ 573   6                            default:break;
+ 574   6                          }break;
+ 575   5                      case 0x02:          //第三路继电器配置查询
+ 576   5                          switch(tele[4])
+ 577   5                          {
+ 578   6                            case 0x00:key_inquire(addr);break;      //继电器开启配置查询
+ 579   6                            case 0x10:key_inquire(addr);break;      //继电器关闭配置查询
+ 580   6                            default:break;
+ 581   6                          }break; 
+ 582   5                      case 0x03:          //第三路继电器配置查询
+ 583   5                          switch(tele[4])
+ 584   5                          {
+ 585   6                            case 0x00:key_inquire(addr);break;      //继电器开启配置查询
+ 586   6                            case 0x10:key_inquire(addr);break;      //继电器关闭配置查询
+ 587   6                            default:break;
+ 588   6                          }break;               
+ 589   5                    }break;
+ 590   4                case 0x50:                  /*------查询可控硅状态输出配置--------*/
+ 591   4                    Scr_Num=tele[3]&0x0F;
+ 592   4                    Scr_Num1=tele[3];
+ 593   4                    Key_Num1=0;Digital_Num1=0;Analog_Num1=0;Relay_Num1=0;
+ 594   4                    addr=0xB800+(Scr_Num<<9);
+ 595   4            
+ 596   4                    switch(Scr_Num)//tele[3]&0x0f
+ 597   4                    {
+ 598   5                      case 0x00:            //第一路可控硅配置查询
+ 599   5                          switch(tele[4])
+ 600   5                          {
+ 601   6                            case 0x00:key_inquire(addr);break;  //查询亮度0%配置信息
+ 602   6                            case 0x10:key_inquire(addr);break;
+ 603   6                            case 0x20:key_inquire(addr);break;  //查询亮度100%配置信息
+ 604   6                            default:break;
+ 605   6                          }break;
+ 606   5                      case 0x01:            //第二路可控硅配置查询
+ 607   5                          switch(tele[4])
+ 608   5                          {
+ 609   6                            case 0x00:key_inquire(addr);break;
+ 610   6                            case 0x10:key_inquire(addr);break;
+ 611   6                            case 0x20:key_inquire(addr);break;
+ 612   6                            default:break;
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 11  
+
+ 613   6                          }break;
+ 614   5                    }break;
+ 615   4                case 0x60:                  /*------查询模拟量信息--------*/
+ 616   4                    switch(tele[3]&0x0F)
+ 617   4                    {
+ 618   5                      case 0x00: tele_pack_luxvalue();      //光照强度信息
+ 619   5                          break;
+ 620   5                      case 0x01: tele_pack_temperature();     //温度值组装函数
+ 621   5                          break;
+ 622   5                      case 0x02: tele_pack_humidity();      //湿度值组装函数
+ 623   5                          break;
+ 624   5                      default: break;
+ 625   5                    } 
+ 626   4                    break;
+ 627   4                case 0x70:  Relay_Flag=1;         /*-------继电器状态查询-------*/
+ 628   4                          break;
+ 629   4                case 0x80:  SCR1_Flag=1;          /*--------可控硅状态查询------*/                      
+ 630   4                      SCR2_Flag=1;
+ 631   4                        break;
+ 632   4                default: break;
+ 633   4              }     
+ 634   3          }
+ 635   2        }
+ 636   1        /*---------------------------*///组操作////*--------------------------------*/
+ 637   1        else if(Group_Operate_Flag)             
+ 638   1        {
+ 639   2          Group_Operate_Flag=0;
+ 640   2          if((tele[2]&0xC0)==0xC0)        //查询报文
+ 641   2          {
+ 642   3              switch(tele[3])     
+ 643   3              {
+ 644   4                case 0x00: 
+ 645   4                    switch(tele[4])
+ 646   4                    {           
+ 647   5                       case 0x00:Group_a=ID_GP_Q[2];
+ 648   5                             tele_pack_group();         //该模块从属于哪些组内
+ 649   5                               break;
+ 650   5                      default: break;
+ 651   5                    }
+ 652   4                    break;
+ 653   4                default :break;         
+ 654   4              } 
+ 655   3          }
+ 656   2          /*-----------------------解析报文：指令报文---------------------------*/
+ 657   2          if((tele[2]&0xC0)==0x00)                    
+ 658   2          {
+ 659   3            //////继电器控制指令    
+ 660   3            if((tele[4]&0x0F)==0x00)                      //继电器口控制
+ 661   3            {
+ 662   4              switch(tele[5]&0x03)                          //检测继电器口1控制命令
+ 663   4              {                      
+ 664   5                case 0x00:  Relay_Value=Relay_Value&0xFE;   //继电器口1关
+ 665   5                            break;
+ 666   5                case 0x01:  Relay_Value=Relay_Value|0x01;   //继电器口1开
+ 667   5                            break;
+ 668   5                case 0x02:  Relay_Value=Relay_Value^0x01;   //继电器口1状态切换
+ 669   5                            break;
+ 670   5                default:    break;                          //继电器口1不做任何改变
+ 671   5              }
+ 672   4              
+ 673   4              switch(tele[5]&0x0C)                          //检测继电器口2控制命令
+ 674   4              {
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 12  
+
+ 675   5                case 0x00:  Relay_Value=Relay_Value&0xFD;   //继电器口2关
+ 676   5                            break;
+ 677   5                case 0x04:  Relay_Value=Relay_Value|0x02;   //继电器口2开
+ 678   5                            break;
+ 679   5                case 0x08:  Relay_Value=Relay_Value^0x02;   //继电器口2状态切换
+ 680   5                            break;
+ 681   5                default:    break;                          //继电器口2不做任何改变
+ 682   5              }
+ 683   4              
+ 684   4              switch(tele[5]&0x30)                          //检测继电器口3控制命令
+ 685   4              {
+ 686   5                case 0x00:  Relay_Value=Relay_Value&0xFB;   //继电器口3关
+ 687   5                            break;
+ 688   5                case 0x10:  Relay_Value=Relay_Value|0x04;   //继电器口3开
+ 689   5                            break;
+ 690   5                case 0x20:  Relay_Value=Relay_Value^0x04;   //继电器口3状态切换
+ 691   5                            break;
+ 692   5                default:    break;                          //继电器口3不做任何改变
+ 693   5              }
+ 694   4              
+ 695   4              switch(tele[5]&0xC0)                          //检测继电器口4控制命令
+ 696   4              {
+ 697   5                case 0x00:  Relay_Value=Relay_Value&0xF7;   //继电器口4关
+ 698   5                            break;
+ 699   5                case 0x40:  Relay_Value=Relay_Value|0x08;   //继电器口4开
+ 700   5                            break;
+ 701   5                case 0x80:  Relay_Value=Relay_Value^0x08;   //继电器口4状态切换
+ 702   5                            break;
+ 703   5                default:    break;                          //继电器口4不做任何改变
+ 704   5              }
+ 705   4              
+ 706   4              switch(tele[6]&0x03)                          //检测继电器口5控制命令
+ 707   4              {
+ 708   5                case 0x00:  Relay_Value=Relay_Value&0xEF;   //继电器口5关
+ 709   5                            break;
+ 710   5                case 0x01:  Relay_Value=Relay_Value|0x10;   //继电器口5开
+ 711   5                            break;
+ 712   5                case 0x02:  Relay_Value=Relay_Value^0x10;   //继电器口5状态切换
+ 713   5                            break;
+ 714   5                default:    break;                          //继电器口5不做任何改变
+ 715   5              }
+ 716   4              
+ 717   4              switch(tele[6]&0x0C)                          //检测继电器口6控制命令
+ 718   4              {
+ 719   5                case 0x00:  Relay_Value=Relay_Value&0xDF;   //继电器口6关
+ 720   5                            break;
+ 721   5                case 0x04:  Relay_Value=Relay_Value|0x20;   //继电器口6开
+ 722   5                            break;
+ 723   5                case 0x08:  Relay_Value=Relay_Value^0x20;   //继电器口6状态切换
+ 724   5                            break;
+ 725   5                default:    break;                          //继电器口6不做任何改变
+ 726   5              }
+ 727   4              
+ 728   4              switch(tele[6]&0x30)                          //检测继电器口7控制命令
+ 729   4              {
+ 730   5                case 0x00:  Relay_Value=Relay_Value&0xBF;   //继电器口7关
+ 731   5                            break;
+ 732   5                case 0x10:  Relay_Value=Relay_Value|0x40;   //继电器口7开
+ 733   5                            break;
+ 734   5                case 0x20:  Relay_Value=Relay_Value^0x40;   //继电器口7状态切换
+ 735   5                            break;
+ 736   5                default:    break;                          //继电器口7不做任何改变
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 13  
+
+ 737   5              }
+ 738   4              
+ 739   4              switch(tele[6]&0xC0)                          //检测继电器口8控制命令
+ 740   4              {
+ 741   5                case 0x00:  Relay_Value=Relay_Value&0x7F;   //继电器口8关
+ 742   5                            break;
+ 743   5                case 0x40:  Relay_Value=Relay_Value|0x80;   //继电器口8开
+ 744   5                            break;
+ 745   5                case 0x80:  Relay_Value=Relay_Value^0x80;   //继电器口8状态切换
+ 746   5                            break;
+ 747   5                default:    break;                          //继电器口8不做任何改变
+ 748   5              }
+ 749   4              
+ 750   4              relay_handle();                              /*继电器报文解析完毕，进行处理*/
+ 751   4            }
+ 752   3            //////硅控口控制指令
+ 753   3            else if((tele[4]&0x0F)==0x01)                   //硅控口1控制指令
+ 754   3            {
+ 755   4              switch(tele[4]&0x70)
+ 756   4              {
+ 757   5                case 0x00:  SCR1_value=tele[5];             //bit6-bit4=000//硅控口1值设定
+ 758   5                            SCR1_Flag=1;    //组装反馈报文标志位置1
+ 759   5                            break;
+ 760   5                
+ 761   5                case 0x10:  if(SCR1_value==0xF0)            //001//硅控口1状态切换
+ 762   5                        SCR1_value=1;
+ 763   5                      else
+ 764   5                        SCR1_value=0xF0;                
+ 765   5                            SCR1_Flag=1;                    //可控硅口1反馈标志位置1
+ 766   5                            break;
+ 767   5                
+ 768   5                case 0x20:  SCR1_control_flag=1;            //硅控口1自增自减
+ 769   5                            SCR1_Flag=1;
+ 770   5                            break;
+ 771   5                
+ 772   5                case 0x50:  SCR1_control_flag=0;            //硅控口1自增自减停止
+ 773   5                      SCR_control_counter=0;
+ 774   5                      SCR1_status=!SCR1_status;
+ 775   5                            SCR1_Flag=1;
+ 776   5                            break;                      
+ 777   5                default:    break;
+ 778   5              }
+ 779   4            }
+ 780   3            else if((tele[4]&0x0F)==0x02)                   //硅控口2控制指令
+ 781   3            {
+ 782   4              switch(tele[5]&0x70)
+ 783   4              {
+ 784   5                case 0x00:  SCR2_value=tele[4];             //硅控口2值设定
+ 785   5                      SCR2_Flag=1;
+ 786   5                            break;
+ 787   5                
+ 788   5                case 0x10:  if(SCR2_value==0xF0)            //硅控口2状态切换
+ 789   5                        SCR2_value=1;
+ 790   5                      else
+ 791   5                        SCR2_value=0xF0;
+ 792   5                      SCR2_Flag=1;
+ 793   5                            break;
+ 794   5                
+ 795   5                case 0x20:  SCR2_control_flag=1;            //硅控口2自增自减
+ 796   5                      SCR2_Flag=1;
+ 797   5                            break;
+ 798   5                
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 14  
+
+ 799   5                case 0x50:  SCR2_control_flag=0;            //硅控口2自增自减停止
+ 800   5                      SCR_control_counter=0;
+ 801   5                      SCR2_status=!SCR2_status;
+ 802   5                      SCR2_Flag=1;
+ 803   5                            break;                    
+ 804   5                default:break;
+ 805   5              }
+ 806   4            }
+ 807   3          }
+ 808   2        }
+ 809   1        Tele_Cheak_R=1;                                   //恢复报文接收缓冲队列检测
+ 810   1      }
+ 811          /*-------------------------------------------------------------*/
+ 812          /*------------------保存配置信息：信息存储函数-----------------*/
+ 813          /*-------------------------------------------------------------*/
+ 814          void key_config()                 //开关配置
+ 815          {
+ 816   1        unsigned char i,j;
+ 817   1        switch(tele[4]&0xF0)
+ 818   1        {
+ 819   2          case 0x00:              //短按配置
+ 820   2              switch(tele[4]&0x07)
+ 821   2              {
+ 822   3                case 0x00:          
+ 823   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 824   3                    {
+ 825   4                      Write_Cache[i+1]=tele[5+i];     //目标1短按报文帧配置
+ 826   4                    }       
+ 827   3                    break;
+ 828   3                case 0x01:  
+ 829   3                    Write_Cache[9]=tele[5];         //目标1短按参数配置（暂定一个延时时间）
+ 830   3                    break;                
+ 831   3                case 0x02:
+ 832   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 833   3                    {
+ 834   4                      Write_Cache[i+17]=tele[5+i];    //目标2短按报文帧配置
+ 835   4                    }       
+ 836   3                    break;
+ 837   3                case 0x03:  
+ 838   3                    Write_Cache[25]=tele[5];        //目标2短按参数配置
+ 839   3                    break;
+ 840   3                case 0x04:
+ 841   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 842   3                    {
+ 843   4                      Write_Cache[i+33]=tele[5+i];    //目标3短按报文帧配置
+ 844   4                    }       
+ 845   3                    break;
+ 846   3                case 0x05:  
+ 847   3                    Write_Cache[41]=tele[5];        //目标3短按参数配置
+ 848   3                    break;
+ 849   3                case 0x06:
+ 850   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 851   3                    {
+ 852   4                      Write_Cache[i+49]=tele[5+i];    //目标4短按报文帧配置
+ 853   4                    }       
+ 854   3                    break;
+ 855   3                case 0x07:  
+ 856   3                    Write_Cache[57]=tele[5];        //目标4短按参数配置
+ 857   3                    break;
+ 858   3                default:break;
+ 859   3              }
+ 860   2              break;
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 15  
+
+ 861   2          case 0x10:                    //长按配置
+ 862   2              switch(tele[4]&0x07)
+ 863   2              {
+ 864   3                case 0x00:                  
+ 865   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 866   3                    {
+ 867   4                      Write_Cache[i+65]=tele[5+i];    //目标1长按报文帧配置
+ 868   4                    }       
+ 869   3                    break;
+ 870   3                case 0x01:  
+ 871   3                    Write_Cache[73]=tele[5];        //目标1长按参数配置
+ 872   3                    break;                
+ 873   3                case 0x02:
+ 874   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 875   3                    {
+ 876   4                      Write_Cache[i+81]=tele[5+i];    //目标2长按报文帧配置
+ 877   4                    }       
+ 878   3                    break;
+ 879   3                case 0x03:  
+ 880   3                    Write_Cache[89]=tele[5];        //目标2长按参数配置
+ 881   3                    break;
+ 882   3                case 0x04:
+ 883   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 884   3                    {
+ 885   4                      Write_Cache[i+97]=tele[5+i];    //目标3长按报文帧配置
+ 886   4                    }       
+ 887   3                    break;
+ 888   3                case 0x05:  
+ 889   3                    Write_Cache[105]=tele[5];       //目标3长按参数配置
+ 890   3                    break;
+ 891   3                case 0x06:
+ 892   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 893   3                    {
+ 894   4                      Write_Cache[i+113]=tele[5+i];   //目标4长按报文帧配置
+ 895   4                    }       
+ 896   3                    break;
+ 897   3                case 0x07:  
+ 898   3                    Write_Cache[121]=tele[5];       //目标4长按参数配置
+ 899   3                    break;
+ 900   3                default:break;
+ 901   3              }
+ 902   2              break;
+ 903   2          case 0x20:                //长按停止配置
+ 904   2              switch(tele[4]&0x07)
+ 905   2              {
+ 906   3                case 0x00:                  
+ 907   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 908   3                    {
+ 909   4                      Write_Cache[i+129]=tele[5+i];   //目标1长停按报文帧配置
+ 910   4                    }       
+ 911   3                    break;
+ 912   3                case 0x01:  
+ 913   3                    Write_Cache[137]=tele[5];       //目标1长停按参数配置
+ 914   3                    break;                
+ 915   3                case 0x02:
+ 916   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 917   3                    {
+ 918   4                      Write_Cache[i+145]=tele[5+i];   //目标2长停按报文帧配置
+ 919   4                    }       
+ 920   3                    break;
+ 921   3                case 0x03:  
+ 922   3                    Write_Cache[153]=tele[5];       //目标2长停按参数配置
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 16  
+
+ 923   3                    break;
+ 924   3                case 0x04:
+ 925   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 926   3                    {
+ 927   4                      Write_Cache[i+161]=tele[5+i];   //目标3长停按报文帧配置
+ 928   4                    }       
+ 929   3                    break;
+ 930   3                case 0x05:  
+ 931   3                    Write_Cache[169]=tele[5];       //目标3长停按参数配置
+ 932   3                    break;
+ 933   3                case 0x06:
+ 934   3                    for(i=0;i<((tele[5]&0x0F)+3);i++)
+ 935   3                    {
+ 936   4                      Write_Cache[i+177]=tele[5+i];   //目标4长停按报文帧配置
+ 937   4                    }       
+ 938   3                    break;
+ 939   3                case 0x07:  
+ 940   3                    Write_Cache[185]=tele[5];       //目标4长停按参数配置
+ 941   3                    break;
+ 942   3                default:break;
+ 943   3              }
+ 944   2              break;
+ 945   2          case 0x30:
+ 946   2              switch(tele[4]&0x07)                //删除目标配置
+ 947   2              {
+ 948   3                case 0x00:                    //删除目标1配置
+ 949   3                    for(j=0;j<3;j++)
+ 950   3                    {
+ 951   4                      for(i=0;i<16;i++)
+ 952   4                      {
+ 953   5                        Write_Cache[i+64*j]=0xff;
+ 954   5                      } 
+ 955   4                    }break;
+ 956   3                case 0x01:                    //删除目标2配置
+ 957   3                    for(j=0;j<3;j++)
+ 958   3                    {
+ 959   4                      for(i=0;i<16;i++)
+ 960   4                      {
+ 961   5                        Write_Cache[16+i+64*j]=0xff;
+ 962   5                      } 
+ 963   4                    }break;
+ 964   3                case 0x02:                    //删除目标3配置
+ 965   3                    for(j=0;j<3;j++)
+ 966   3                    {
+ 967   4                      for(i=0;i<16;i++)
+ 968   4                      {
+ 969   5                        Write_Cache[32+i+64*j]=0xff;
+ 970   5                      } 
+ 971   4                    }break;
+ 972   3                case 0x03:                    //删除目标4配置
+ 973   3                    for(j=0;j<3;j++)
+ 974   3                    {
+ 975   4                      for(i=0;i<16;i++)
+ 976   4                      {
+ 977   5                        Write_Cache[48+i+64*j]=0xff;
+ 978   5                      } 
+ 979   4                    }break;
+ 980   3                default:  break;                  
+ 981   3              }
+ 982   2              break;  
+ 983   2          case 0x40:                          //删除所有目标配置
+ 984   2              {
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 17  
+
+ 985   3                switch(tele[4]&0x0F)
+ 986   3                {
+ 987   4                  case 0x00:
+ 988   4                      for(i=0;i<192;i++)
+ 989   4                      {
+ 990   5                        Write_Cache[i]=0xFF;
+ 991   5                      }break;
+ 992   4                  default:  break;    
+ 993   4                }
+ 994   3              }break; 
+ 995   2          default:  break;                    
+ 996   2        }
+ 997   1      }
+ 998          void key_inquire(unsigned int add)
+ 999          {
+1000   1        switch(tele[4]&0xF0)
+1001   1        {
+1002   2          case 0x00:  style=0x00;
+1003   2                tele_pack_shortconfig(add);         //短指令行配置查询
+1004   2                break;            
+1005   2          case 0x10:  style=0x10;
+1006   2                tele_pack_shortconfig(add+64);        //长指令行配置查询
+1007   2                break;
+1008   2          case 0x20:  style=0x20;
+1009   2                tele_pack_shortconfig(add+128);       //停指令行配置查询
+1010   2                break;
+1011   2      //    case 0x30: key_all();  break;             //查询所有指令行(空留)
+1012   2          default:   break;
+1013   2        }
+1014   1      }
+1015          void jump_order(unsigned char JumpNum)                  //定时器时间到就执行
+1016          {
+1017   1        unsigned char tele_backup3[7];
+1018   1        unsigned char i;
+1019   1        for(i=0;i<7;i++)
+1020   1          tele_backup3[i]=jump_tele[JumpNum+i];
+1021   1      
+1022   1        switch(tele_backup3[4]&0xC0)    //指令表A--------对应的8路按键的指令内容
+1023   1        {
+1024   2          case 0x40:                //指令表A的“短”指令行
+1025   2                if(tele_backup3[5]&0x01)      //指令表A指令组1
+1026   2                {Key_Value=0x80;tele_pack_key();}     
+1027   2                if(tele_backup3[5]&0x02)
+1028   2                {Key_Value=0x81;tele_pack_key();}
+1029   2                if(tele_backup3[5]&0x04)      //指令表A指令组3
+1030   2                {Key_Value=0x82;tele_pack_key();}     
+1031   2                if(tele_backup3[5]&0x08)
+1032   2                {Key_Value=0x83;tele_pack_key();}
+1033   2                if(tele_backup3[5]&0x10)      //指令表A指令组5
+1034   2                {Key_Value=0x84;tele_pack_key();}     
+1035   2                if(tele_backup3[5]&0x20)
+1036   2                {Key_Value=0x85;tele_pack_key();}
+1037   2                if(tele_backup3[5]&0x40)      //指令表A指令组7
+1038   2                {Key_Value=0x86;tele_pack_key();}     
+1039   2                if(tele_backup3[5]&0x80)
+1040   2                {Key_Value=0x87;tele_pack_key();}                               
+1041   2              break;
+1042   2          case 0x80:                //指令表A的“长”指令行
+1043   2                if(tele_backup3[5]&0x01)      //指令表A指令组1
+1044   2                {Key_Value=0x40;tele_pack_key();}     
+1045   2                if(tele_backup3[5]&0x02)
+1046   2                {Key_Value=0x41;tele_pack_key();}
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 18  
+
+1047   2                if(tele_backup[5]&0x04)     //指令表A指令组3
+1048   2                {Key_Value=0x42;tele_pack_key();}     
+1049   2                if(tele_backup3[5]&0x08)
+1050   2                {Key_Value=0x43;tele_pack_key();}
+1051   2                if(tele_backup3[5]&0x10)      //指令表A指令组5
+1052   2                {Key_Value=0x44;tele_pack_key();}     
+1053   2                if(tele_backup3[5]&0x20)
+1054   2                {Key_Value=0x45;tele_pack_key();}
+1055   2                if(tele_backup3[5]&0x40)      //指令表A指令组7
+1056   2                {Key_Value=0x46;tele_pack_key();}     
+1057   2                if(tele_backup3[5]&0x80)
+1058   2                {Key_Value=0x47;tele_pack_key();}                               
+1059   2              break;
+1060   2          case 0xC0:                //指令表A的“停”指令行
+1061   2                if(tele_backup3[5]&0x01)      //指令表A指令组1
+1062   2                {Key_Value=0x20;tele_pack_key();}     
+1063   2                if(tele_backup3[5]&0x02)
+1064   2                {Key_Value=0x21;tele_pack_key();}
+1065   2                if(tele_backup3[5]&0x04)      //指令表A指令组3
+1066   2                {Key_Value=0x22;tele_pack_key();}     
+1067   2                if(tele_backup3[5]&0x08)
+1068   2                {Key_Value=0x23;tele_pack_key();}
+1069   2                if(tele_backup3[5]&0x10)      //指令表A指令组5
+1070   2                {Key_Value=0x24;tele_pack_key();}     
+1071   2                if(tele_backup3[5]&0x20)
+1072   2                {Key_Value=0x25;tele_pack_key();}
+1073   2                if(tele_backup3[5]&0x40)      //指令表A指令组7
+1074   2                {Key_Value=0x26;tele_pack_key();}   
+1075   2                if(tele_backup3[5]&0x80)
+1076   2                {Key_Value=0x27;tele_pack_key();}
+1077   2              break;
+1078   2          default :break;
+1079   2        }
+1080   1        switch(tele_backup3[4]&0x30)      //指令表B----对应着8路感应量的指令内容
+1081   1        {
+1082   2          case 0x10:                //指令表B的短指令行
+1083   2              if(tele_backup3[5]&0x01)        //指令表B指令组1
+1084   2                {Key_Value=0x80;tele_pack_sound();}     
+1085   2                if(tele_backup3[5]&0x02)
+1086   2                {Key_Value=0x81;tele_pack_sound();}
+1087   2                if(tele_backup3[5]&0x04)      //指令表B指令组3
+1088   2                {Key_Value=0x82;tele_pack_sound();}     
+1089   2                if(tele_backup3[5]&0x08)
+1090   2                {Key_Value=0x83;tele_pack_sound();}
+1091   2                if(tele_backup3[5]&0x10)      //指令表B指令组5
+1092   2                {Key_Value=0x84;tele_pack_sound();}     
+1093   2                if(tele_backup3[5]&0x20)
+1094   2                {Key_Value=0x85;tele_pack_sound();}
+1095   2                if(tele_backup3[5]&0x40)      //指令表B指令组7
+1096   2                {Key_Value=0x86;tele_pack_sound();}     
+1097   2                if(tele_backup3[5]&0x80)
+1098   2                {Key_Value=0x87;tele_pack_sound();}                               
+1099   2              break;
+1100   2          case 0x20:                //指令表B的“长”指令行
+1101   2                if(tele_backup3[5]&0x01)      //指令表B指令组1
+1102   2                {Key_Value=0x40;tele_pack_sound();}     
+1103   2                if(tele_backup3[5]&0x02)
+1104   2                {Key_Value=0x41;tele_pack_sound();}
+1105   2                if(tele_backup3[5]&0x04)      //指令表B指令组3
+1106   2                {Key_Value=0x42;tele_pack_sound();}     
+1107   2                if(tele_backup3[5]&0x08)
+1108   2                {Key_Value=0x43;tele_pack_sound();}
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 19  
+
+1109   2                if(tele_backup3[5]&0x10)      //指令表B指令组5
+1110   2                {Key_Value=0x44;tele_pack_sound();}     
+1111   2                if(tele_backup3[5]&0x20)
+1112   2                {Key_Value=0x45;tele_pack_sound();}
+1113   2                if(tele_backup3[5]&0x40)      //指令表B指令组7
+1114   2                {Key_Value=0x46;tele_pack_sound();}     
+1115   2                if(tele_backup3[5]&0x80)
+1116   2                {Key_Value=0x47;tele_pack_sound();}                               
+1117   2              break;  
+1118   2          case 0x30:                //指令表B的“停”指令行
+1119   2                if(tele_backup3[5]&0x01)      //指令表B指令组1
+1120   2                {Key_Value=0x20;tele_pack_sound();}     
+1121   2                if(tele_backup3[5]&0x02)
+1122   2                {Key_Value=0x21;tele_pack_sound();}
+1123   2                if(tele_backup3[5]&0x04)      //指令表B指令组3
+1124   2                {Key_Value=0x22;tele_pack_sound();}     
+1125   2                if(tele_backup3[5]&0x08)
+1126   2                {Key_Value=0x23;tele_pack_sound();}
+1127   2                if(tele_backup3[5]&0x10)      //指令表B指令组5
+1128   2                {Key_Value=0x24;tele_pack_sound();}     
+1129   2                if(tele_backup3[5]&0x20)
+1130   2                {Key_Value=0x25;tele_pack_sound();}
+1131   2                if(tele_backup3[5]&0x40)      //指令表B指令组7
+1132   2                {Key_Value=0x26;tele_pack_sound();}     
+1133   2                if(tele_backup3[5]&0x80)
+1134   2                {Key_Value=0x27;tele_pack_sound();}
+1135   2              break;
+1136   2          default :break;       
+1137   2        }
+1138   1        switch(tele_backup3[4]&0x0C)        //指令表C-----对应着8（6）路继电器（和2路可控硅）
+1139   1        {
+1140   2          case 0x04:                //指令表C的短指令行
+1141   2              if(tele_backup3[5]&0x01)        //指令表C指令组1
+1142   2                {Key_Value=0x80;tele_pack_relay();}     
+1143   2                if(tele_backup3[5]&0x02)
+1144   2                {Key_Value=0x81;tele_pack_relay();}
+1145   2                if(tele_backup3[5]&0x04)      //指令表C指令组3
+1146   2                {Key_Value=0x82;tele_pack_relay();}     
+1147   2                if(tele_backup3[5]&0x08)
+1148   2                {Key_Value=0x83;tele_pack_relay();}
+1149   2                if(tele_backup3[5]&0x10)      //指令表C指令组5
+1150   2                {Key_Value=0x84;tele_pack_relay();}     
+1151   2                if(tele_backup3[5]&0x20)
+1152   2                {Key_Value=0x85;tele_pack_relay();}
+1153   2                if(tele_backup3[5]&0x40)      //指令表C指令组7
+1154   2                {Key_Value=0x86;tele_pack_relay();}     
+1155   2                if(tele_backup3[5]&0x80)
+1156   2                {Key_Value=0x87;tele_pack_relay();}                               
+1157   2              break;
+1158   2          case 0x08:                //指令表C的“长”指令行
+1159   2                if(tele_backup3[5]&0x01)      //指令表C指令组1
+1160   2                {Key_Value=0x40;tele_pack_relay();}     
+1161   2                if(tele_backup3[5]&0x02)
+1162   2                {Key_Value=0x41;tele_pack_relay();}
+1163   2                if(tele_backup3[5]&0x04)      //指令表C指令组3
+1164   2                {Key_Value=0x42;tele_pack_relay();}     
+1165   2                if(tele_backup3[5]&0x08)
+1166   2                {Key_Value=0x43;tele_pack_relay();}
+1167   2                if(tele_backup3[5]&0x10)      //指令表C指令组5
+1168   2                {Key_Value=0x44;tele_pack_relay();}     
+1169   2                if(tele_backup3[5]&0x20)
+1170   2                {Key_Value=0x45;tele_pack_relay();}
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 20  
+
+1171   2                if(tele_backup3[5]&0x40)      //指令表C指令组7
+1172   2                {Key_Value=0x46;tele_pack_relay();}     
+1173   2                if(tele_backup3[5]&0x80)
+1174   2                {Key_Value=0x47;tele_pack_relay();}                               
+1175   2              break;  
+1176   2          case 0x0c:                //指令表C的“停”指令行
+1177   2                if(tele_backup3[5]&0x01)      //指令表C指令组1
+1178   2                {Key_Value=0x20;tele_pack_relay();}     
+1179   2                if(tele_backup3[5]&0x02)
+1180   2                {Key_Value=0x21;tele_pack_relay();}
+1181   2                if(tele_backup3[5]&0x04)      //指令表C指令组3
+1182   2                {Key_Value=0x22;tele_pack_relay();}     
+1183   2                if(tele_backup3[5]&0x08)
+1184   2                {Key_Value=0x23;tele_pack_relay();}
+1185   2                if(tele_backup3[5]&0x10)      //指令表C指令组5
+1186   2                {Key_Value=0x24;tele_pack_relay();}     
+1187   2                if(tele_backup3[5]&0x20)
+1188   2                {Key_Value=0x25;tele_pack_relay();}
+1189   2                if(tele_backup3[5]&0x40)      //指令表C指令组7
+1190   2                {Key_Value=0x26;tele_pack_relay();}     
+1191   2                if(tele_backup3[5]&0x80)
+1192   2                {Key_Value=0x27;tele_pack_relay();}
+1193   2              break;
+1194   2          default :break;       
+1195   2        } 
+1196   1      }
+1197          void jump_order2()                  //非延时跳转，仅跳转到“短”指令行    
+1198          {
+1199   1        switch(tele_backup2[4]&0xC0)    //指令表A--------对应的8路按键的指令内容
+1200   1        {
+1201   2          case 0x40:
+1202   2          {               //指令表A的“短”指令行
+1203   3              if(tele_backup2[5]&0x01)      //指令表A指令组1
+1204   3              {Key_Value=0x80;tele_pack_key();} //led0=~led0;   
+1205   3              if(tele_backup2[5]&0x02)
+1206   3              {Key_Value=0x81;tele_pack_key();}//  led1=~led1;
+1207   3              if(tele_backup2[5]&0x04)      //指令表A指令组3
+1208   3              {Key_Value=0x82;tele_pack_key();}     
+1209   3              if(tele_backup2[5]&0x08)
+1210   3              {Key_Value=0x83;tele_pack_key();}
+1211   3              if(tele_backup2[5]&0x10)      //指令表A指令组5
+1212   3              {Key_Value=0x84;tele_pack_key();}     
+1213   3              if(tele_backup2[5]&0x20)
+1214   3              {Key_Value=0x85;tele_pack_key();}
+1215   3              if(tele_backup2[5]&0x40)      //指令表A指令组7
+1216   3              {Key_Value=0x86;tele_pack_key();}     
+1217   3              if(tele_backup2[5]&0x80)
+1218   3              {Key_Value=0x87;tele_pack_key();}                               
+1219   3            
+1220   3          }break;
+1221   2          default :break;
+1222   2        }
+1223   1        switch(tele_backup2[4]&0x30)      //指令表B----对应着8路感应量的指令内容
+1224   1        {
+1225   2          case 0x10:                //指令表B的短指令行
+1226   2          {
+1227   3                if(tele_backup2[5]&0x01)        //指令表B指令组1
+1228   3                {Key_Value=0x80;tele_pack_sound();}     
+1229   3                if(tele_backup2[5]&0x02)
+1230   3                {Key_Value=0x81;tele_pack_sound();}
+1231   3                if(tele_backup2[5]&0x04)      //指令表B指令组3
+1232   3                {Key_Value=0x82;tele_pack_sound();}     
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 21  
+
+1233   3                if(tele_backup2[5]&0x08)
+1234   3                {Key_Value=0x83;tele_pack_sound();}
+1235   3                if(tele_backup2[5]&0x10)      //指令表B指令组5
+1236   3                {Key_Value=0x84;tele_pack_sound();}     
+1237   3                if(tele_backup2[5]&0x20)
+1238   3                {Key_Value=0x85;tele_pack_sound();}
+1239   3                if(tele_backup2[5]&0x40)      //指令表B指令组7
+1240   3                {Key_Value=0x86;tele_pack_sound();}     
+1241   3                if(tele_backup2[5]&0x80)
+1242   3                {Key_Value=0x87;tele_pack_sound();} 
+1243   3          }break;
+1244   2          default :break;       
+1245   2        }
+1246   1        switch(tele_backup2[4]&0x0C)        //指令表C-----对应着8（6）路继电器（和2路可控硅）
+1247   1        {
+1248   2          case 0x04:                //指令表C的短指令行
+1249   2          {
+1250   3                if(tele_backup2[5]&0x01)        //指令表C指令组1
+1251   3                {Key_Value=0x80;tele_pack_relay();}     
+1252   3                if(tele_backup2[5]&0x02)
+1253   3                {Key_Value=0x81;tele_pack_relay();}
+1254   3                if(tele_backup2[5]&0x04)      //指令表C指令组3
+1255   3                {Key_Value=0x82;tele_pack_relay();}     
+1256   3                if(tele_backup2[5]&0x08)
+1257   3                {Key_Value=0x83;tele_pack_relay();}
+1258   3                if(tele_backup2[5]&0x10)      //指令表C指令组5
+1259   3                {Key_Value=0x84;tele_pack_relay();}     
+1260   3                if(tele_backup2[5]&0x20)
+1261   3                {Key_Value=0x85;tele_pack_relay();}
+1262   3                if(tele_backup2[5]&0x40)      //指令表C指令组7
+1263   3                {Key_Value=0x86;tele_pack_relay();}     
+1264   3                if(tele_backup2[5]&0x80)
+1265   3                {Key_Value=0x87;tele_pack_relay();} 
+1266   3          }break;                                   
+1267   2          default :break;       
+1268   2        } 
+1269   1      }
+1270          bit jumptele_cache()
+1271          {
+1272   1        unsigned char i;
+1273   1        bit Tele_Full;
+1274   1        for(i=0;i<22;i+=7)
+1275   1        {
+1276   2          temper=temper<<1;
+1277   2          if(jump_tele[21-i]==0x00)
+1278   2            temper=temper|0x01;           //用Temper的低四位来判断四个缓存区是否有空
+1279   2          else                    //那一位为1代表空
+1280   2            temper=temper&0xfe;
+1281   2          temper&=0x0F;
+1282   2        }
+1283   1        if((temper&0x0F)!=0x00)
+1284   1          Tele_Full=1;                //表示缓存有空
+1285   1        else 
+1286   1          Tele_Full=0;                //表示缓存已满    
+1287   1        
+1288   1        return Tele_Full;
+1289   1      }
+1290          unsigned char jumptele_write()
+1291          {
+1292   1        unsigned char i;
+1293   1        if(jumptele_cache())              //若有空，将报文写入缓存区
+1294   1        {                     //依次判断，优先机制
+C51 COMPILER V9.50a   TELE_PARSE                                                           07/17/2017 17:31:02 PAGE 22  
+
+1295   2          if(temper&0x01)
+1296   2          { 
+1297   3            for(i=0;i<7;i++)
+1298   3              jump_tele[i]=tele_backup[i];
+1299   3            return 1;
+1300   3          }
+1301   2          else if(temper&0x02)
+1302   2          {
+1303   3            for(i=0;i<7;i++)
+1304   3              jump_tele[7+i]=tele_backup[i];
+1305   3            return 2;
+1306   3          }
+1307   2          else if(temper&0x04)
+1308   2          {
+1309   3            for(i=0;i<7;i++)
+1310   3              jump_tele[14+i]=tele_backup[i];
+1311   3            return 3;
+1312   3          }
+1313   2          else
+1314   2          {
+1315   3            for(i=0;i<7;i++)
+1316   3              jump_tele[21+i]=tele_backup[i];
+1317   3            return 4;
+1318   3          }
+1319   2        }
+1320   1        else 
+1321   1          return 0;
+1322   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   7160    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     72      16
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      4       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

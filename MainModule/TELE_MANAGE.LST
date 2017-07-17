@@ -1,0 +1,430 @@
+C51 COMPILER V9.50a   TELE_MANAGE                                                          07/17/2017 17:31:02 PAGE 1   
+
+
+C51 COMPILER V9.50a, COMPILATION OF MODULE TELE_MANAGE
+OBJECT MODULE PLACED IN TELE_MANAGE.OBJ
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE TELE_MANAGE.c LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          /*****************************************************************
+   2                                  TELE_MANAGE.c  file
+   3          
+   4          Ö÷Òª¹¦ÄÜ£º±¨ÎÄÑ­»·»º³å¶ÓÁĞµÄÊµÏÖÓë¹ÜÀí
+   5          
+   6          ´´½¨Ê±¼ä£º2015.10.31
+   7          *****************************************************************/
+   8          /*--------------------------------------------------------------*/
+   9          /*----------------------------Í·ÎÄ¼ş----------------------------*/
+  10          /*--------------------------------------------------------------*/
+  11          #include "TELE_MANAGE.h"
+  12          #include "CONFIG.h"
+  13          #include "tele_t_r.h"
+  14          #include "tele_parse.h"
+  15          #include "control.h"
+  16          
+  17          
+  18          unsigned char  Tele_T[QUEUE_LENGTH];               //·¢ËÍ±¨ÎÄ»º³åÇø
+  19          unsigned char  Tele_R[QUEUE_LENGTH];               //½ÓÊÕ±¨ÎÄ»º³åÇø
+  20          
+  21          unsigned char *Head_Index_T;                      //±¨ÎÄ·¢ËÍ¶ÓÁĞÍ·µØÖ·
+  22          unsigned char *Tail_Index_T;                      //±¨ÎÄ·¢ËÍ¶ÓÁĞÎ²µØÖ·
+  23          unsigned char *Head_Index_R;                      //±¨ÎÄ½ÓÊÕ¶ÓÁĞÍ·µØÖ·
+  24          unsigned char *Tail_Index_R;                      //±¨ÎÄ½ÓÊÕ¶ÓÁĞÎ²µØÖ·
+  25          
+  26          bit           Queue_Empty_T;                      //±¨ÎÄ·¢ËÍ¶ÓÁĞ¿Õ±êÖ¾Î»
+  27          bit           Queue_Empty_R;                      //±¨ÎÄ½ÓÊÕ¶ÓÁĞ¿Õ±êÖ¾Î»
+  28          
+  29          
+  30          bit           Tele_Cheak_T;        //ÓÃÓÚ±ê¶¨ÊÇ·ñĞèÒª½øĞĞ·¢ËÍ»º³å¶ÓÁĞ¼ì²é£¬¼ì²é¶ÓÁĞÖĞÊÇ·ñÓĞ±¨ÎÄ
+  31          bit           Tele_Cheak_R;        //ÓÃÓÚ±ê¶¨ÊÇ·ñĞèÒª½øĞĞ½ÓÊÕ»º³å¶ÓÁĞ¼ì²é£¬¼ì²é¶ÓÁĞÖĞÊÇ·ñÓĞ±¨ÎÄ
+  32          bit           Tele_Handle_R;       //½ÓÊÕ»º³åÇø±¨ÎÄ´¦Àí±êÖ¾Î»
+  33          
+  34          /*--------------------------------------------------------------*/
+  35          /*------------------------±¨ÎÄ¹ÜÀí³õÊ¼»¯-----------------------*/
+  36          /*--------------------------------------------------------------*/
+  37          void init_tele_manage()
+  38          {
+  39   1        Head_Index_T=Tele_T;                               //³õÊ¼»¯±¨ÎÄ·¢ËÍ¶ÓÁĞÍ·µØÖ·
+  40   1        Tail_Index_T=Tele_T;                               //³õÊ¼»¯±¨ÎÄ·¢ËÍ¶ÓÁĞÎ²µØÖ·
+  41   1        Head_Index_R=Tele_R;                               //³õÊ¼»¯±¨ÎÄ½ÓÊÕ¶ÓÁĞÍ·µØÖ·
+  42   1        Tail_Index_R=Tele_R;                               //³õÊ¼»¯±¨ÎÄ½ÓÊÕ¶ÓÁĞÎ²µØÖ·
+  43   1        
+  44   1        Queue_Empty_T=1;                                   //±¨ÎÄ·¢ËÍ¶ÓÁĞÎª¿Õ
+  45   1          Queue_Empty_R=1;                                   //±¨ÎÄ½ÓÊÕ¶ÓÁĞÎª¿Õ
+  46   1        
+  47   1        Tele_Cheak_T=1;               //±¨ÎÄ·¢ËÍ»º´æ¶ÓÁĞ¼ì²éÎ»£¬³õÊ¼»¯ÖÃ1£¬¶Ô±¨ÎÄ»º´æÇø½øĞĞ¼ì²é
+  48   1        Tele_Cheak_R=1;               //±¨ÎÄ½ÓÊÕ»º´æ¶ÓÁĞ¼ì²éÎ»£¬³õÊ¼»¯ÖÃ1£¬¶Ô±¨ÎÄ»º´æÇø½øĞĞ¼ì²é
+  49   1      }
+  50          
+  51          /*-------------------------------------------------------------*/
+  52          /*---------------------Ğ´±¨ÎÄ·¢ËÍ»º³å¶ÓÁĞ----------------------*/
+  53          /*-------------------------------------------------------------*/
+  54          unsigned char write_tele_t(unsigned char date[],unsigned char n)//²»°üÀ¨ID1£¬ID2ºÍCRC  3Ö¡
+  55          {                     
+C51 COMPILER V9.50a   TELE_MANAGE                                                          07/17/2017 17:31:02 PAGE 2   
+
+  56   1        unsigned char i;      
+  57   1                          //ĞÂ°æĞ­ÒéÉÏbit3-bit0´ú±íÊı¾İÓò³¤¶È
+  58   1        if((date[0]&0x0f)!=n-3)             //¶ÔĞ´ÈëÊı¾İ¸ñÊ½½øĞĞ¼ì²é£¬Õâ¶Ô±¨ÎÄ»º³åÇø¹ÜÀí·Ç³£ÖØÒª
+  59   1          return 0;       //ÅĞ¶ÏÊı¾İÓòÖ¡ÊıÁ¿£¬¼´·â×°±¨ÎÄ¼õÈ¥ÁË¡¾±¨ÎÄÊôĞÔ£¬ÈºID£¬Ä£¿éID3Ö¡¡¿
+  60   1      
+  61   1        if(Head_Index_T==Tail_Index_T)                     //·¢ËÍ»º³å¶ÓÁĞÎª¿Õ»òÕßÂú
+  62   1        {
+  63   2          if(Queue_Empty_T)                                //¶ÓÁĞÎª¿Õ
+  64   2          {
+  65   3            for(i=0;i<n;i++)          //½«n¸öÊı¾İĞ´Èëµ½±¨ÎÄ·¢ËÍ»º´æÇø¡¾²»´øÓĞID1,ID2ºÍCRC¡¿
+  66   3            {
+  67   4              *Head_Index_T=date[i];        //½«date[]´«µİ¸øÖ¸Õë±äÁ¿*Head_Index
+  68   4              Head_Index_T++;
+  69   4              if((Head_Index_T-Tele_T)==QUEUE_LENGTH)     //Í·µØÖ·Òç³ö   40
+  70   4                Head_Index_T=Head_Index_T-QUEUE_LENGTH;   //Í·µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+  71   4            }
+  72   3            Queue_Empty_T=0;                              //¶ÓÁĞ·Ç¿Õ£¬´æÓĞÊı¾İ
+  73   3          }
+  74   2          else                                            //¶ÓÁĞÎªÂú
+  75   2            return 0;                                     
+  76   2        }
+  77   1        
+  78   1        else if(Head_Index_T>Tail_Index_T)
+  79   1        {
+  80   2          if((QUEUE_LENGTH+Tail_Index_T)>=(n+Head_Index_T))  //¶ÓÁĞÊ£Óà¿Õ¼ä¿ÉÒÔÈİÄÉÏÂĞÂ±¨ÎÄ
+  81   2          {
+  82   3            for(i=0;i<n;i++)
+  83   3            {
+  84   4              *Head_Index_T=date[i];
+  85   4              Head_Index_T++;
+  86   4              if((Head_Index_T-Tele_T)==QUEUE_LENGTH)     //Í·µØÖ·Òç³ö
+  87   4                Head_Index_T=Head_Index_T-QUEUE_LENGTH;   //Í·µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+  88   4            }
+  89   3          }
+  90   2          else
+  91   2            return 0;
+  92   2        }
+  93   1        
+  94   1        else
+  95   1        {
+  96   2          if((Tail_Index_T-Head_Index_T)>=n)              //¶ÓÁĞÊ£Óà¿Õ¼ä¿ÉÒÔÈİÄÉÏÂĞÂ±¨ÎÄ
+  97   2          {
+  98   3            for(i=0;i<n;i++)
+  99   3            {
+ 100   4              *Head_Index_T=date[i];
+ 101   4              Head_Index_T++;                             //´Ë´Î²»ĞèÒª½øĞĞÍ·µØÖ·Òç³öÅĞ¶Ï
+ 102   4              if((Head_Index_T-Tele_T)==QUEUE_LENGTH)     //Í·µØÖ·Òç³ö
+ 103   4                Head_Index_T=Head_Index_T-QUEUE_LENGTH;   //Í·µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 104   4            }
+ 105   3          }
+ 106   2          else
+ 107   2            return 0;
+ 108   2        }
+ 109   1        
+ 110   1        return 1;                                        //Êı¾İ³É¹¦Ğ´Èë
+ 111   1      }
+ 112          
+ 113          /*--------------------------------------------------------------*/
+ 114          /*---------------------¶Á±¨ÎÄ·¢ËÍ»º³å¶ÓÁĞ-----------------------*/
+ 115          /*------------¹¦ÄÜ£º·µ»Ø»º´æ±¨ÎÄµÄ³¤¶È--------------------------*/
+ 116          /*--------------------------------------------------------------*/
+ 117          unsigned char read_tele_t(unsigned char date[])
+C51 COMPILER V9.50a   TELE_MANAGE                                                          07/17/2017 17:31:02 PAGE 3   
+
+ 118          {
+ 119   1        unsigned char i,n;
+ 120   1        n=0;                      //´æ´¢±¨ÎÄ×ÜÖ¡ÊıÁ¿
+ 121   1        
+ 122   1        if(Head_Index_T==Tail_Index_T)                   //·¢ËÍ»º³å¶ÓÁĞÎª¿Õ»òÕßÂú
+ 123   1        {
+ 124   2          if(Queue_Empty_T)                              //¶ÓÁĞÎª¿Õ,ÎŞ±¨ÎÄ
+ 125   2            return 0;
+ 126   2          else                      //¶ÓÁĞ·Ç¿Õ
+ 127   2          {
+ 128   3            date[0]=*Tail_Index_T;        //´ÓĞ´ÍêµÄÎ²Ö¸Õë¿ªÊ¼¶Á
+ 129   3            Tail_Index_T++;
+ 130   3            n=date[0]&0x0F;         //ÅĞ¶Ï±¨ÎÄÖĞÊı¾İÓò³¤¶È
+ 131   3        
+ 132   3            for(i=1;i<n+3;i++)          //n+3¼ÓÉÏÁË¡¾±¨ÎÄÊôĞÔ£¬ÈºID£¬½ÓÊÕID¡¿²»°üÀ¨ID1£¬ID2£¬CRC
+ 133   3            {
+ 134   4              date[i]=*Tail_Index_T;
+ 135   4              Tail_Index_T++;
+ 136   4              if((Tail_Index_T-Tele_T)==QUEUE_LENGTH)     //Î²µØÖ·Òç³ö
+ 137   4                Tail_Index_T=Tail_Index_T-QUEUE_LENGTH;   //Î²µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 138   4            }
+ 139   3          }
+ 140   2        }
+ 141   1        
+ 142   1        else if(Head_Index_T>Tail_Index_T)
+ 143   1        {
+ 144   2                    
+ 145   2          n=*Tail_Index_T&0x0F;           //ÓÉ±¨ÎÄÊôĞÔÖ¡»ñÈ¡±¨ÎÄÊı¾İÓòÊıÄ¿                         
+ 146   2          
+ 147   2          if((Head_Index_T-Tail_Index_T)<(n+3)) //»º³åÇøÊ£ÓàÖ¡ÊıÄ¿Ğ¡ÓÚ±¾±¨ÎÄ¸ÃÓĞµÄÖ¡ÊıÄ¿(»º³åÇøÄÚµÄ·¢ËÍ±¨ÎÄÖ¡ÊıÄ¿±
+             -È±¨ÎÄÊôĞÔÀïµÄÖ¡ÊıÄ¿Ğ¡3)
+ 148   2          {                                      //n+3¼ÓÉÏÁË¡¾±¨ÎÄÊôĞÔ£¬ÈºID£¬½ÓÊÕID¡¿²»°üÀ¨ID1£¬ID2£¬CRC
+ 149   3            Tail_Index_T=Head_Index_T;       //»º³åÇøÊı¾İÓĞ´íÎó£¬Çå¿ÕËùÓĞÊı¾İ
+ 150   3            Queue_Empty_T=1;
+ 151   3            return 0;
+ 152   3          }
+ 153   2          else                  //»º´æÇøÄÜ¹»ÈİÄÉ±¨ÎÄµÄÖ¡Êı
+ 154   2          {
+ 155   3            for(i=0;i<n+3;i++)
+ 156   3            {
+ 157   4              date[i]=*Tail_Index_T;
+ 158   4              Tail_Index_T++;
+ 159   4              if((Tail_Index_T-Tele_T)==QUEUE_LENGTH)     //Î²µØÖ·Òç³ö,,,´Ë´¦²»ĞèÒª¼ì²é
+ 160   4                Tail_Index_T=Tail_Index_T-QUEUE_LENGTH;   //Î²µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 161   4            }
+ 162   3            if(Head_Index_T==Tail_Index_T)
+ 163   3              Queue_Empty_T=1;
+ 164   3          }
+ 165   2        }
+ 166   1        
+ 167   1        else
+ 168   1        {
+ 169   2          
+ 170   2          n=*Tail_Index_T&0x0F;               //ÓÉ±¨ÎÄÊôĞÔÖ¡»ñÈ¡Êı¾İÓòÊıÄ¿
+ 171   2          
+ 172   2          if((Head_Index_T-Tail_Index_T+QUEUE_LENGTH)<(n+3))
+ 173   2          {
+ 174   3            Tail_Index_T=Head_Index_T;                   //»º³åÇøÊı¾İÓĞ´íÎó£¬Çå¿ÕËùÓĞÊı¾İ
+ 175   3            Queue_Empty_T=1;
+ 176   3            return 0;
+ 177   3          }
+ 178   2          else
+C51 COMPILER V9.50a   TELE_MANAGE                                                          07/17/2017 17:31:02 PAGE 4   
+
+ 179   2          {
+ 180   3            for(i=0;i<n+3;i++)
+ 181   3            {
+ 182   4              date[i]=*Tail_Index_T;
+ 183   4              Tail_Index_T++;
+ 184   4              if((Tail_Index_T-Tele_T)==QUEUE_LENGTH)     //Î²µØÖ·Òç³ö
+ 185   4                Tail_Index_T=Tail_Index_T-QUEUE_LENGTH;   //Î²µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 186   4            }
+ 187   3            if(Head_Index_T==Tail_Index_T)
+ 188   3              Queue_Empty_T=1;
+ 189   3          }
+ 190   2        }
+ 191   1        
+ 192   1        return (n+3);         //n+3¼ÓÉÏÁË¡¾±¨ÎÄÊôĞÔ£¬ÈºID£¬½ÓÊÕID¡¿²»°üÀ¨ID1£¬ID2£¬CRC
+ 193   1      }
+ 194          
+ 195          
+ 196          /*--------------------------------------------------------------*/
+ 197          /*---------------------Ğ´±¨ÎÄ½ÓÊÕ»º³å¶ÓÁĞ----------------------*/
+ 198          /*--------------------------------------------------------------*/
+ 199          unsigned char write_tele_r(unsigned char date[],unsigned char n)
+ 200          {
+ 201   1        unsigned char i;
+ 202   1                                //nÖĞº¬ÓĞ¡¾ID1,ID2,ÊôĞÔ,Êı¾İÓò¡¿£¬È±ÉÙ¡¾ÈºID£¬½ÓÊÕÄ£¿é,CRC 3Ö¡¡¿
+ 203   1        if((date[2]&0x0F)!=n-3)                            //¶ÔĞ´ÈëÊı¾İ¸ñÊ½½øĞĞ¼ì²é£¬Õâ¶Ô±¨ÎÄ»º³åÇø¹ÜÀí·Ç³£ÖØÒª
+ 204   1          return 0;
+ 205   1      
+ 206   1        if(Head_Index_R==Tail_Index_R)                     //½ÓÊÕ»º³å¶ÓÁĞÎª¿Õ»òÕßÂú
+ 207   1        {
+ 208   2          if(Queue_Empty_R)                                //¶ÓÁĞÎª¿Õ
+ 209   2          {
+ 210   3            for(i=0;i<n;i++)
+ 211   3            {
+ 212   4              *Head_Index_R=date[i];
+ 213   4              Head_Index_R++;
+ 214   4              if((Head_Index_R-Tele_R)==QUEUE_LENGTH)     //Í·µØÖ·Òç³ö
+ 215   4                Head_Index_R=Head_Index_R-QUEUE_LENGTH;   //Í·µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 216   4            }
+ 217   3            Queue_Empty_R=0;                              //¶ÓÁĞ·Ç¿Õ
+ 218   3          }
+ 219   2          else                                            //¶ÓÁĞÎªÂú
+ 220   2            return 0;                                     
+ 221   2        }
+ 222   1        
+ 223   1        else if(Head_Index_R>Tail_Index_R)
+ 224   1        {
+ 225   2          if((QUEUE_LENGTH+Tail_Index_R)>=(n+Head_Index_R))  //¶ÓÁĞÊ£Óà¿Õ¼ä¿ÉÒÔÈİÄÉÏÂĞÂ±¨ÎÄ
+ 226   2          {
+ 227   3            for(i=0;i<n;i++)
+ 228   3            {
+ 229   4              *Head_Index_R=date[i];
+ 230   4              Head_Index_R++;
+ 231   4              if((Head_Index_R-Tele_R)==QUEUE_LENGTH)     //Í·µØÖ·Òç³ö
+ 232   4                Head_Index_R=Head_Index_R-QUEUE_LENGTH;   //Í·µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 233   4            }
+ 234   3          }
+ 235   2          else
+ 236   2            return 0;
+ 237   2        }
+ 238   1        
+ 239   1        else
+ 240   1        {
+C51 COMPILER V9.50a   TELE_MANAGE                                                          07/17/2017 17:31:02 PAGE 5   
+
+ 241   2          if((Tail_Index_R-Head_Index_R)>=n)             //¶ÓÁĞÊ£Óà¿Õ¼ä¿ÉÒÔÈİÄÉÏÂĞÂ±¨ÎÄ
+ 242   2          {
+ 243   3            for(i=0;i<n;i++)
+ 244   3            {
+ 245   4              *Head_Index_R=date[i];
+ 246   4              Head_Index_R++;                            //´Ë´Î²»ĞèÒª½øĞĞÍ·µØÖ·Òç³öÅĞ¶Ï
+ 247   4              if((Head_Index_R-Tele_R)==QUEUE_LENGTH)     //Í·µØÖ·Òç³ö
+ 248   4                Head_Index_R=Head_Index_R-QUEUE_LENGTH;   //Í·µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 249   4            }
+ 250   3          }
+ 251   2          else
+ 252   2            return 0;
+ 253   2        }
+ 254   1        
+ 255   1        return 1;                                        //Êı¾İ³É¹¦Ğ´Èë
+ 256   1      }
+ 257          
+ 258          /*--------------------------------------------------------------*/
+ 259          /*---------------------¶Á±¨ÎÄ½ÓÊÕ»º³å¶ÓÁĞ-----------------------*/
+ 260          /*                 ¹¦ÄÜ:·µ»ØÈ¡³ö½ÓÊÕ±¨ÎÄµÄ¸öÊıÖµ                */
+ 261          /*--------------------------------------------------------------*/
+ 262          unsigned char read_tele_r(unsigned char date[])
+ 263          {
+ 264   1        unsigned char i,n;
+ 265   1        n=0;
+ 266   1        
+ 267   1        if(Head_Index_R==Tail_Index_R)                   //·¢ËÍ»º³å¶ÓÁĞÎª¿Õ»òÕßÂú
+ 268   1        {
+ 269   2          if(Queue_Empty_R)                              //¶ÓÁĞ¿Õ
+ 270   2            return 0;
+ 271   2          else                       //¶ÓÁĞ·Ç¿Õ
+ 272   2          {
+ 273   3            if(Tail_Index_R-Tele_R>=QUEUE_LENGTH-2)     //
+ 274   3            {
+ 275   4                n=*(Tail_Index_R+2-QUEUE_LENGTH)&0x0F;        //nÎª±¨ÎÄÊı¾İÓòÊıÁ¿
+ 276   4            }
+ 277   3            else
+ 278   3            {
+ 279   4                n=*(Tail_Index_R+2)&0x0F;
+ 280   4            }
+ 281   3            for(i=0;i<n+3;i++)            //Êı¾İÓò+¡¾ID1,ID2,ÊôĞÔ¡¿
+ 282   3            {
+ 283   4              date[i]=*Tail_Index_R;
+ 284   4              Tail_Index_R++;
+ 285   4              if((Tail_Index_R-Tele_R)==QUEUE_LENGTH)     //Î²µØÖ·Òç³ö
+ 286   4                Tail_Index_R=Tail_Index_R-QUEUE_LENGTH;   //Î²µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 287   4            }
+ 288   3          }
+ 289   2        }
+ 290   1        
+ 291   1        else if(Head_Index_R>Tail_Index_R)
+ 292   1        {
+ 293   2          if(Tail_Index_R-Tele_R>=QUEUE_LENGTH-2)         
+ 294   2          {
+ 295   3              n=*(Tail_Index_R+2-QUEUE_LENGTH)&0x0F;      //ÓÉ±¨ÎÄÊôĞÔÖ¡»ñÈ¡±¨ÎÄÊı¾İÓòÊıÄ¿
+ 296   3          }
+ 297   2          else
+ 298   2          {
+ 299   3              n=*(Tail_Index_R+2)&0x0F;         //ÓÉ±¨ÎÄÊôĞÔÖ¡»ñÈ¡±¨ÎÄÊı¾İÓòÊıÄ¿
+ 300   3          }             
+ 301   2          
+ 302   2          if((Head_Index_R-Tail_Index_R)<(n+3))//»º³åÇøÊ£ÓàÖ¡ÊıÄ¿Ğ¡ÓÚ±¾±¨ÎÄ¸ÃÓĞµÄÖ¡ÊıÄ¿(»º³åÇøÄÚµÄ·¢ËÍ±¨ÎÄÖ¡ÊıÄ¿±È
+C51 COMPILER V9.50a   TELE_MANAGE                                                          07/17/2017 17:31:02 PAGE 6   
+
+             -±¨ÎÄÊôĞÔÀïµÄÖ¡ÊıÄ¿Ğ¡3)
+ 303   2          {                                              //ÉÙÁËÈºID¡¢½ÓÊÕÄ£¿éID¡¢CRCÖ¡
+ 304   3            Tail_Index_R=Head_Index_R;                   //»º³åÇøÊı¾İÓĞ´íÎó£¬Çå¿ÕËùÓĞÊı¾İ
+ 305   3            Queue_Empty_R=1;
+ 306   3            return 0;
+ 307   3          }
+ 308   2          else
+ 309   2          {
+ 310   3            for(i=0;i<n+3;i++)
+ 311   3            {
+ 312   4              date[i]=*Tail_Index_R;
+ 313   4              Tail_Index_R++;
+ 314   4              if((Tail_Index_R-Tele_R)==QUEUE_LENGTH)     //Î²µØÖ·Òç³ö,,,´Ë´¦²»ĞèÒª¼ì²é
+ 315   4                Tail_Index_R=Tail_Index_R-QUEUE_LENGTH;   //Î²µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 316   4            }
+ 317   3            if(Head_Index_R==Tail_Index_R)
+ 318   3              Queue_Empty_R=1;
+ 319   3          }
+ 320   2        }
+ 321   1        
+ 322   1        else
+ 323   1        {
+ 324   2          if(Tail_Index_R-Tele_R>=QUEUE_LENGTH-2)         //ÓÉ±¨ÎÄÊôĞÔÖ¡»ñÈ¡±¨ÎÄÖ¡ÊıÄ¿
+ 325   2          {
+ 326   3              n=*(Tail_Index_R+2-QUEUE_LENGTH)&0x0F;
+ 327   3          }
+ 328   2          else
+ 329   2          {
+ 330   3              n=*(Tail_Index_R+2)&0x0F;
+ 331   3          }                      
+ 332   2          
+ 333   2          if((Head_Index_R-Tail_Index_R+QUEUE_LENGTH)<(n+3))
+ 334   2          {
+ 335   3            Tail_Index_R=Head_Index_R;                   //»º³åÇøÊı¾İÓĞ´íÎó£¬Çå¿ÕËùÓĞÊı¾İ
+ 336   3            Queue_Empty_R=1;
+ 337   3            return 0;
+ 338   3          }
+ 339   2          else
+ 340   2          {
+ 341   3            for(i=0;i<n+3;i++)
+ 342   3            {
+ 343   4              date[i]=*Tail_Index_R;
+ 344   4              Tail_Index_R++;
+ 345   4              if((Tail_Index_R-Tele_R)==QUEUE_LENGTH)     //Î²µØÖ·Òç³ö
+ 346   4                Tail_Index_R=Tail_Index_R-QUEUE_LENGTH;   //Î²µØÖ··µ»Ø×îĞ¡µØÖ·£¬ÊµÏÖÑ­»·»º³å
+ 347   4            }
+ 348   3            if(Head_Index_R==Tail_Index_R)
+ 349   3              Queue_Empty_R=1;
+ 350   3          }
+ 351   2        }
+ 352   1        
+ 353   1        return (n+3);             //·µ»Ø¡¾ID1£¬ID2£¬ÊôĞÔ£¬Êı¾İÓò¡¿²»º¬ÓĞ¡¾ÈºID£¬½ÓÊÕÄ£¿éID£¬CRC¡¿
+ 354   1      }
+ 355          
+ 356          /*-------------------------------------------------------------*/
+ 357          /*----------------------±¨ÎÄ»º³å¶ÓÁĞ¼ì²é-----------------------*/
+ 358          /*-------------------------------------------------------------*/
+ 359          void tele_cheakt()
+ 360          {
+ 361   1        unsigned char i;
+ 362   1        if(Queue_Empty_T==0)                //¶ÓÁĞ·Ç¿Õ£¬´æÓĞÊı¾İ
+ 363   1        {
+C51 COMPILER V9.50a   TELE_MANAGE                                                          07/17/2017 17:31:02 PAGE 7   
+
+ 364   2          Frame_Num_T=read_tele_t(t); //½«»º´æÇøµÄ±¨ÎÄ¶ÁÈ¡µ½t[]£¬·µ»ØÊı¾İÓò+¡¾±¨ÎÄÊôĞÔ£¬ÈºID£¬½ÓÊÕID¡¿²»°üÀ¨ID1£¬I
+             -D2£¬CRC
+ 365   2          if(Frame_Num_T)             //
+ 366   2          {   
+ 367   3            if(t[2]==ID)
+ 368   3            {
+ 369   4              if(t[0]&0x10)
+ 370   4                  Group_Operate_Flag=1;
+ 371   4              else  Module_Operate_Flag=1;
+ 372   4      
+ 373   4              tele[2]=t[0];
+ 374   4              for(i=3;i<10;i++)
+ 375   4                tele[i]=t[i];       
+ 376   4              Tele_Handle_R=1;
+ 377   4      //        led0=~led0;   
+ 378   4            }
+ 379   3            else 
+ 380   3            {
+ 381   4              Tele_TF=1;              //ÓĞ±¨ÎÄÒª·¢ËÍÖÃ1--->>Ö÷º¯Êıµ÷È¡±¨ÎÄ·¢ËÍº¯Êı
+ 382   4              Tele_Cheak_T=0;                                        //Í£Ö¹·¢ËÍ»º³å¶ÓÁĞ¼ì²â
+ 383   4            }
+ 384   3          }
+ 385   2        }
+ 386   1      }
+ 387          
+ 388          void tele_cheakr()
+ 389          {
+ 390   1        if(Queue_Empty_R==0)              ////¶ÓÁĞ·Ç¿Õ£¬´æÓĞÊı¾İ
+ 391   1          Tele_Handle_R=1;            //½ÓÊÕ»º³åÇø±¨ÎÄ´¦Àí±êÖ¾Î»ÖÃ1--->>Ö÷º¯Êı½øĞĞ±¨ÎÄ½âÎö
+ 392   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3027    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    132      20
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      5    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

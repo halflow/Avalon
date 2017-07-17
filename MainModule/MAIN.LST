@@ -1,0 +1,225 @@
+C51 COMPILER V9.50a   MAIN                                                                 07/17/2017 17:31:01 PAGE 1   
+
+
+C51 COMPILER V9.50a, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN MAIN.OBJ
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE MAIN.c LARGE OPTIMIZE(7,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include <STC89C5xRC.h>
+   2          #include "CONTROL.h"
+   3          #include "TELE_MANAGE.h"
+   4          #include "TELE_T_R.h"
+   5          #include "TELE_PARSE.h"
+   6          #include "TELE_PACK.h"
+   7          #include "RELAY.h"
+   8          #include "SCR.h"
+   9          #include "Sensor_T_H.h"
+  10          #include "LUX_LIGHT.h"
+  11          #include <intrins.h>
+  12          
+  13          sbit sound=P1^5;
+  14          void main()
+  15          {
+  16   1        unsigned char i;
+  17   1        
+  18   1        init_tele_t_r();        //报文发送与接收模块初始化
+  19   1        init_config();          //初始化程序
+  20   1        init_tele_manage();       //报文管理初始化
+  21   1        init_scr();           //可控硅初始化
+  22   1        init_sensor_t_h();        //温湿度传感器初始化
+  23   1        init_lux();           //光照度传感器初始化
+  24   1        init_key();           //开关初始化
+  25   1        init_relay();         //继电器初始化
+  26   1        SM2=1;               //所有节点处于监听状态   
+  27   1        
+  28   1        sound=1;        //读端口前先置1
+  29   1      
+  30   1        for(i=0;i<255;i++)        //延时大约6us
+  31   1          _nop_();
+  32   1        for(i=0;i<255;i++)        //延时大约6us
+  33   1          _nop_();
+  34   1        for(i=0;i<255;i++)        //延时大约6us
+  35   1          _nop_();
+  36   1        for(i=0;i<255;i++)        //延时大约6us
+  37   1          _nop_();
+  38   1        RI=0;                 //串口接收标志位清零
+  39   1        TI=0;                 //串口发送标志位清零
+  40   1        EA=1;                                             //开总中断
+  41   1        ES=1;                                             //开串口中断
+  42   1        REN=1;                                            //允许接收数据
+  43   1        WDT_CONTR=0x3F;                 //看门狗寄存器设置
+  44   1        
+  45   1        while(1)
+  46   1        {
+  47   2          if(Tele_Cheak_T)  //发送缓冲队列检查标志位，检查队列中是否有报文，初试值为1，一直在检测
+  48   2            tele_cheakt();          //报文缓冲队列检查函数
+  49   2          if(Tele_Cheak_R)          //接收缓冲队列检查标志位，检查队列中是否有报文
+  50   2            tele_cheakr();          //报文缓冲队列检查函数
+  51   2            
+  52   2          if(Tele_TF)             //报文发送标志位，在tele_cheakt()中置1
+  53   2            telegram_t();         //报文发送程序
+  54   2          if(Tele_Handle_R)         //接收缓冲区报文处理标志位,tele_cheakr()中置1
+  55   2            tele_parse();         //报文解析函数
+C51 COMPILER V9.50a   MAIN                                                                 07/17/2017 17:31:01 PAGE 2   
+
+  56   2            
+  57   2          if(Key_Flag)            //按键动作标志位
+  58   2          {
+  59   3            tele_pack_key();        //按键动作报文组装程序
+  60   3          }
+  61   2          if(Relay_Flag)            //继电器动作标志位
+  62   2            tele_pack_relayval();     //继电器状态报文
+  63   2          if(SCR1_Flag)           //可控硅口1状态改变标志位
+  64   2          {
+  65   3            tele_pack_scrval();       //可控硅状态反馈报文
+  66   3            Scr1_Act_Flag=1;
+  67   3          } 
+  68   2          if(SCR2_Flag)           //可控硅口2状态改变标志位
+  69   2          {
+  70   3            tele_pack_scrval();       //可控硅状态反馈报文
+  71   3            Scr2_Act_Flag=1;
+  72   3          }
+  73   2              
+  74   2          if(Sound_Check_Flag)        //声音传感器标志位
+  75   2          {
+  76   3            if(sound==0)          //检测到有声音
+  77   3            {
+  78   4              Sound_Check_Flag=0;
+  79   4              Sound_Pack_Flag=1;      //声音报文组装标志位
+  80   4            }
+  81   3          } 
+  82   2          if(Sound_Pack_Flag)
+  83   2            tele_pack_sound();        //声音传感器动作报文 
+  84   2          
+  85   2          if(Sensor_T_H_Flag)         //定时器2中每隔2s
+  86   2            star_sensor_t_h();        //启动温湿度传感器
+  87   2          if(Sensor_T_H_Flag1&&T_H_Data==0) //温湿度传感器IIC通信数据信号
+  88   2            read_sensor_t_h();        //读取温湿度传感器
+  89   2      
+  90   2          if(Lux_Start_Flag)        
+  91   2            start_lux();          //启动光照度传感器
+  92   2          if(Lux_Read_Flag)         //光照读取标志位，计时器1每200ms读取一次
+  93   2            read_lux();           //读取光照度传感器          
+  94   2            
+  95   2          if(Lux_Check_Flag)                            //光照强度检测标志位
+  96   2          {
+  97   3            if(Lux_Value>=Analog_Threshold[0])
+  98   3            {
+  99   4              Lux_Check_Flag=0;
+ 100   4              Lux_High_Flag=1;
+ 101   4              tele_pack_lux();
+ 102   4            }
+ 103   3            else if(Lux_Value<=Analog_Threshold[3])
+ 104   3            {
+ 105   4              Lux_Check_Flag=0;
+ 106   4              Lux_Low_Flag=1;
+ 107   4              tele_pack_lux();
+ 108   4            }
+ 109   3          }
+ 110   2          if((Lux_Value<Analog_Threshold[0])&&(Lux_Value>Analog_Threshold[3]))  //直到光照值合适才恢复检测
+ 111   2          {
+ 112   3            Lux_Check_Flag=1;
+ 113   3          } 
+ 114   2          
+ 115   2          if(Relay_Check_Flag)                          //继电器状态检测标志位
+ 116   2          {
+ 117   3            if(Relay1_Alconfig_Flag&&Relay1_Act_Flag)               //已经配置过并且继电器有动作
+C51 COMPILER V9.50a   MAIN                                                                 07/17/2017 17:31:01 PAGE 3   
+
+ 118   3            {
+ 119   4              Relay1_Act_Flag=0;                        //清空本次动作标志位
+ 120   4              Relay_Check_Flag=0;
+ 121   4              Which_Relay=0;
+ 122   4              tele_pack_relay();  
+ 123   4            }
+ 124   3            else if(Relay2_Alconfig_Flag&&Relay2_Act_Flag)                //已经配置过并且继电器有动作
+ 125   3            {
+ 126   4              Relay2_Act_Flag=0;                        //清空本次动作标志位
+ 127   4              Relay_Check_Flag=0;
+ 128   4              Which_Relay=1;
+ 129   4              tele_pack_relay();  
+ 130   4            }
+ 131   3            else if(Relay3_Alconfig_Flag&&Relay3_Act_Flag)                //已经配置过并且继电器有动作
+ 132   3            {
+ 133   4              Relay3_Act_Flag=0;                        //清空本次动作标志位
+ 134   4              Relay_Check_Flag=0;
+ 135   4              Which_Relay=2;
+ 136   4              tele_pack_relay();  
+ 137   4            }
+ 138   3            else if(Relay4_Alconfig_Flag&&Relay4_Act_Flag)                //已经配置过并且继电器有动作
+ 139   3            {
+ 140   4              Relay4_Act_Flag=0;                        //清空本次动作标志位
+ 141   4              Relay_Check_Flag=0;
+ 142   4              Which_Relay=3;
+ 143   4              tele_pack_relay();  
+ 144   4            }
+ 145   3          }
+ 146   2          if(Scr_Check_Flag)
+ 147   2          {
+ 148   3            if((Scr1_Alconfig_Flag&&Scr1_Act_Flag)||(Scr2_Alconfig_Flag&&Scr2_Act_Flag))              //已经配置过并且继电
+             -器有动作
+ 149   3            {
+ 150   4              Scr_Check_Flag=0;                     //停止检测
+ 151   4              if(Scr1_Act_Flag)
+ 152   4              {
+ 153   5                Scr1_Act_Flag=0;                        //清空本次动作标志位        
+ 154   5                tele_pack_scr1();         
+ 155   5              }
+ 156   4              if(Scr2_Act_Flag)
+ 157   4              {
+ 158   5                Scr2_Act_Flag=0;                        //清空本次动作标志位        
+ 159   5                tele_pack_scr2();           
+ 160   5              }
+ 161   4      
+ 162   4            }
+ 163   3          }
+ 164   2      //延时跳转指令时间到    
+ 165   2          if(Time_Up1)
+ 166   2          {         
+ 167   3            Delay_Flag1=0;
+ 168   3            jump_order(0);
+ 169   3            jump_tele[0]=0;
+ 170   3            Time_Up1=0;
+ 171   3          }
+ 172   2          if(Time_Up2)
+ 173   2          {         
+ 174   3            Delay_Flag2=0;
+ 175   3            jump_order(7);
+ 176   3            jump_tele[7]=0;
+ 177   3            Time_Up2=0;
+ 178   3          }
+C51 COMPILER V9.50a   MAIN                                                                 07/17/2017 17:31:01 PAGE 4   
+
+ 179   2          if(Time_Up3)
+ 180   2          {         
+ 181   3            Delay_Flag3=0;
+ 182   3            jump_order(14);
+ 183   3            jump_tele[14]=0;
+ 184   3            Time_Up3=0;
+ 185   3          } 
+ 186   2          if(Time_Up4)
+ 187   2          {         
+ 188   3            Delay_Flag4=0;
+ 189   3            jump_order(21);
+ 190   3            jump_tele[21]=0;
+ 191   3            Time_Up4=0;
+ 192   3          } 
+ 193   2          WDT_CONTR=0x3F;
+ 194   2        }
+ 195   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    451    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

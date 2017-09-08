@@ -40,12 +40,12 @@ esc  退出插入模式
 git命令
 
 git add .                          有新文件加入时使用这一句
-
-git fetch origin master    获取最新版本到本地;git merge origin master  将本地和远程合并
-git pull origin master     合并以上两个命令，只需要这一条
-
 git commit -a -m "Ubuntu0或者raspi或者Win再加上日期"      “”内的内容是表示这是谁修改的，必须先执行这一句，再push上服务器
-git push origin master                                                                将本地版本推送到github
+git push origin master                      将本地版本推送到github
+
+git fetch origin master    获取最新版本到本地;
+git merge origin master  将本地和远程合并
+git pull origin master    合并以上两个命令，只需要这一条
 
 git log
 git log --pretty=oneline                  查看历史版本，查询之后按q退出

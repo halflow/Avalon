@@ -111,13 +111,13 @@ void id_chang()
 	Temp2_5=Temp1_6;
 	Temp2_3=Temp1_5;
 	Temp2_1=Temp1_4;
-	ID2=Temp2;							//ID2为取出的高4位
+	ID2=Temp2;							//ID2为取出的低4位
 	Temp2=0xFF;
 	Temp2_7=Temp1_3;
 	Temp2_5=Temp1_2;
 	Temp2_3=Temp1_1;
 	Temp2_1=Temp1_0;
-	ID1=Temp2;							//ID1为取出的低4位
+	ID1=Temp2;							//ID1为取出的高4位
 }
 
 /*--------------------------------------------------------------*/
